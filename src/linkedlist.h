@@ -1,6 +1,6 @@
-#ifndef GREETINGS_H
-#define GREETINGS_H
+#ifndef LINKEDLIST_H
+#define LINKEDLIST_H
 
-void RunLinkedList();
+void runLinkedList();
 
 #endif

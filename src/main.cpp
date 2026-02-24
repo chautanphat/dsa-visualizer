@@ -3,15 +3,21 @@
 #include "raygui.h"
 #include "linkedlist.h"
 
-const int screenWidth = 1400;
-const int screenHeight = 1000;
+const int screenWidth = 1600;
+const int screenHeight = 900;
+const int targetFPS = 60;
 
 int main()
 {
     InitWindow(screenWidth, screenHeight, "Data Structures Visualizer");
-    SetTargetFPS(60);
+    
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    SetTargetFPS(targetFPS);
 
-    RunLinkedList();
+    while (!WindowShouldClose())
+    {
+        runLinkedList();
+    }
 
     CloseWindow();
     
