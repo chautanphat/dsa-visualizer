@@ -24,7 +24,7 @@
 .PHONY: all clean
 
 # Define required raylib variables
-PROJECT_NAME       ?= game
+PROJECT_NAME       ?= visualizer
 RAYLIB_VERSION     ?= 5.1-dev
 RAYLIB_PATH        ?= C:/raylib/raylib
 
@@ -143,9 +143,8 @@ RAYLIB_RELEASE_PATH 	?= $(RAYLIB_PATH)/src
 # Look for libraylib.so.1 => $(RAYLIB_INSTALL_PATH)/libraylib.so.1 or similar listing.
 EXAMPLE_RUNTIME_PATH   ?= $(RAYLIB_RELEASE_PATH)
 
-# Define default C compiler: gcc
-# NOTE: define g++ compiler if using C++
-CC = gcc
+# Define default compiler. Use g++ when compiling C++ (.cpp) sources
+CC = g++
 
 ifeq ($(PLATFORM),PLATFORM_DESKTOP)
     ifeq ($(PLATFORM_OS),OSX)
@@ -193,7 +192,7 @@ endif
 #  -std=gnu99           defines C language mode (GNU C from 1999 revision)
 #  -Wno-missing-braces  ignore invalid warning (GCC bug 53119)
 #  -D_DEFAULT_SOURCE    use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
-CFLAGS += -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces
+CFLAGS += -Wall -std=c++11 -D_DEFAULT_SOURCE -Wno-missing-braces
 
 ifeq ($(BUILD_MODE),DEBUG)
     CFLAGS += -g -O0
@@ -249,7 +248,8 @@ endif
 
 # Define include paths for required headers
 # NOTE: Several external required libraries (stb and others)
-INCLUDE_PATHS = -I. -I$(RAYLIB_PATH)/src -I$(RAYLIB_PATH)/src/external
+
+INCLUDE_PATHS = -I. -Ivendor -I$(RAYLIB_PATH)/src -I$(RAYLIB_PATH)/src/external
 
 # Define additional directories containing required header files
 ifeq ($(PLATFORM),PLATFORM_RPI)
@@ -352,9 +352,11 @@ SRC_DIR = src
 OBJ_DIR = obj
 
 # Define all object files from source files
-SRC = $(call rwildcard, ./, *.cpp, *.h)
-#OBJS = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
-OBJS = $(patsubst %.cpp,%.o,$(filter %.cpp,$(SRC)))
+# Only collect .cpp sources under $(SRC_DIR)
+SRC = $(call rwildcard, $(SRC_DIR)/, *.cpp)
+
+# Map source files to object files as top-level .o (no obj/ directory)
+OBJS = $(patsubst $(SRC_DIR)/%.cpp,%.o,$(SRC))
 
 # For Android platform we call a custom Makefile.Android
 ifeq ($(PLATFORM),PLATFORM_ANDROID)
@@ -374,11 +376,9 @@ all:
 $(PROJECT_NAME): $(OBJS)
 	$(CC) -o $(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
-# Compile source files
-# NOTE: This pattern will compile every module defined on $(OBJS)
-#%.o: %.cpp
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
+# Compile source files: build .o files next to project root (no obj/ directory)
+%.o:
+	$(CC) -c $(SRC_DIR)/$*.cpp -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
 
 # Clean everything
 clean:
@@ -402,4 +402,3 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
 	del *.o *.html *.js
 endif
 	@echo Cleaning done
-
