@@ -2,79 +2,96 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
-
-struct LinkedList
-{
-    struct Node
-    {
-        int value;
-        Node* next;
-        Node(int val) : value(val), next(nullptr) {}
-    };
-    Node* head;
-
-    LinkedList() : head(nullptr) {}
-
-    void addToHead(int value)
-    {
-        Node* newNode = new Node(value);
-        newNode->next = head;
-        head = newNode;
-    }
-    
-    void addToTail(int value)
-    {
-        Node* newNode = new Node(value);
-        if (!head)
-        {
-            head = newNode;
-            return;
-        }
-        Node* temp = head;
-        while (temp->next) temp = temp->next;
-        temp->next = newNode;
-    }
-
-    void clear()
-    {
-        Node* current = head;
-        while (current)
-        {
-            Node* next = current->next;
-            delete current;
-            current = next;
-        }
-        head = nullptr;
-    }
-
-    void drawLinkedList(float startX, float startY)
-    {
-        Node* cur = head;
-        float offsetX = 120;
-        while (cur)
-        {
-            DrawRectangle(startX, startY, 100, 50, LIGHTGRAY);
-            DrawText(TextFormat("%d", cur->value), startX + 40, startY + 15, 20, BLACK);
-            if (cur->next)
-            {
-                DrawLine(startX + 100, startY + 25, startX + offsetX, startY + 25, BLACK);
-                DrawTriangle((Vector2){startX + offsetX - 10, startY + 20}, (Vector2){startX + offsetX - 10, startY + 30}, (Vector2){startX + offsetX, startY + 25}, BLACK);
-            }
-            cur = cur->next;
-            startX += offsetX;
-        }
-    }
-};
+#include <string>
+#include <sstream>
+#include <fstream>
 
 static LinkedList myAppList;
 
-void randomizeLinkedList(LinkedList& list)
+LinkedList::Node::Node(int val) : value(val), next(nullptr), box({0, 0, 0, 0}) {}
+
+LinkedList::LinkedList() : head(nullptr) {}
+LinkedList::~LinkedList() { clear(); }
+
+void LinkedList::addToHead(int value)
 {
-    list.clear();
+    Node* newNode = new Node(value);
+    newNode->next = head;
+    head = newNode;
+}
+
+void LinkedList::addToTail(int value)
+{
+    Node* newNode = new Node(value);
+    if (!head)
+    {
+        head = newNode;
+        return;
+    }
+    Node* temp = head;
+    while (temp->next) temp = temp->next;
+    temp->next = newNode;
+}
+
+void LinkedList::clear()
+{
+    Node* current = head;
+    while (current)
+    {
+        Node* next = current->next;
+        delete current;
+        current = next;
+    }
+    head = nullptr;
+}
+
+void LinkedList::drawLinkedList(float startX, float startY)
+{
+    Node* cur = head;
+    float offsetX = 120;
+    while (cur)
+    {
+        cur->box = {startX, startY, 100.0f, 50.0f};
+        DrawRectangleRec(cur->box, LIGHTGRAY);
+        DrawRectangleLinesEx(cur->box, 2, DARKGRAY);
+        DrawNumberInBox(cur->box, cur->value, 20, BLACK);
+
+        DrawLine(startX + 100, startY + 25, startX + offsetX, startY + 25, BLACK);
+        DrawTriangle((Vector2){startX + offsetX - 10, startY + 20}, (Vector2){startX + offsetX - 10, startY + 30}, (Vector2){startX + offsetX, startY + 25}, BLACK);
+
+        cur = cur->next;
+        startX += offsetX;
+    }
+
+    Rectangle nullBox = {startX, startY, 100.0f, 50.0f};
+    DrawRectangleRec(nullBox, LIGHTGRAY);
+    DrawRectangleLinesEx(nullBox, 2, DARKGRAY);
+    DrawTextInBox(nullBox, "NULL", 20, BLACK);
+}
+
+void LinkedList::randomize()
+{
+    this->clear();
     int nodeCount = GetRandomValue(3, 10);
     for (int i = 0; i < nodeCount; ++i)
     {
-        list.addToTail(GetRandomValue(1, 100));
+        this->addToTail(GetRandomValue(1, 100));
+    }
+}
+
+void LinkedList::fileUpload()
+{
+    
+}
+
+void LinkedList::manualUpload(const std::string &input)
+{
+    this->clear();
+    std::istringstream iss(input);
+    int value;
+    while (iss >> value)
+    {
+        this->addToTail(value);
     }
 }
 
@@ -82,37 +99,46 @@ void runLinkedList()
 {
     // int inputValue = 10;
     // int editValue = 7;
+
+    static char valBuffer[16] = "10";
+    static char editBuffer[16] = "7";
+    static char inputBuffer[256] = "1 2 3 4 5";
+
     bool editModeValue = false;
     bool editModeEditValue = false;
+    bool editMode = false;
 
-    char valBuffer[16] = "10";
-    char editBuffer[16] = "7";
     while (!WindowShouldClose())
     {
         BeginDrawing();
             ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
             myAppList.drawLinkedList(400, 250);
-            GuiGroupBox((Rectangle){ 800, 20, 500, 100 }, "Initialize Linked List");
-            if (GuiButton((Rectangle){ 850, 50, 120, 30 }, "Manual"))
-            {
-                // Code to initialize linked list visualization
-            }
-            if (GuiButton((Rectangle){ 1000, 50, 120, 30 }, "Upload"))
-            {
-                // Code to initialize linked list visualization with random values
-            }
-            if (GuiButton((Rectangle){ 1150, 50, 120, 30 }, "Random"))
-            {
-                randomizeLinkedList(myAppList);
-            }
 
-            float startX = 20, startY = 250, offsetX = 10;
+            float startX = 600, startY = 20, offsetX = 10;
+
+            GuiGroupBox((Rectangle){ startX, startY, 800, 80 }, "Initialize Linked List");
+            if (GuiButton((Rectangle){ startX + 50, startY + 30, 120, 30 }, "Random"))
+            {
+                myAppList.randomize();
+            }
+            if (GuiButton((Rectangle){ startX + 200, startY + 30, 120, 30 }, "Upload"))
+            {
+                myAppList.fileUpload();
+            }
+            if (GuiButton((Rectangle){ startX + 350, startY + 30, 120, 30 }, "Manual"))
+            {
+                myAppList.manualUpload(inputBuffer);
+            }
+            
+            if (GuiTextBox((Rectangle){ startX + 500, startY + 30, 250, 30 }, inputBuffer, 256, editMode)) editMode = !editMode;
+
+            startX = 20, startY = 250, offsetX = 10;
             GuiGroupBox((Rectangle){ startX, startY, 240, 320 }, "Linked List Operations");
             makeGuiLabel(startX + offsetX + 10, startY + 25, "ADD A NODE");
             makeGuiLabel(startX + offsetX + 10, startY + 60, "Value:");
             if (GuiTextBox((Rectangle){ startX + offsetX + 120, startY + 60, 70, 25 }, valBuffer, 16, editModeValue)) editModeValue = !editModeValue;
-            if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 100, 90, 35 }, "Head")) { /* Logic */ }
-            if (GuiButton((Rectangle){ startX + offsetX + 110, startY + 100, 90, 35 }, "Tail")) { /* Logic */ }
+            // if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 100, 90, 35 }, "Head")) { /* Logic */ }
+            if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 100, 185, 35 }, "Add to Tail")) { /* Logic */ }
 
             makeGuiLabel(startX + offsetX + 10, startY + 175, "SELECTION ACTIONS");
             makeGuiLabel(startX + offsetX + 10, startY + 210, "Edit Value:");
