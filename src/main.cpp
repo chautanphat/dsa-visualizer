@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "linkedlist.h"
+#include <ctime>
 
 const int screenWidth = 1600;
 const int screenHeight = 900;
@@ -10,6 +11,7 @@ const int targetFPS = 60;
 int main()
 {
     InitWindow(screenWidth, screenHeight, "Data Structures Visualizer");
+    SetRandomSeed(time(NULL));
     
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
     SetTargetFPS(targetFPS);

@@ -34,12 +34,54 @@ struct LinkedList
         while (temp->next) temp = temp->next;
         temp->next = newNode;
     }
+
+    void clear()
+    {
+        Node* current = head;
+        while (current)
+        {
+            Node* next = current->next;
+            delete current;
+            current = next;
+        }
+        head = nullptr;
+    }
+
+    void drawLinkedList(float startX, float startY)
+    {
+        Node* cur = head;
+        float offsetX = 120;
+        while (cur)
+        {
+            DrawRectangle(startX, startY, 100, 50, LIGHTGRAY);
+            DrawText(TextFormat("%d", cur->value), startX + 40, startY + 15, 20, BLACK);
+            if (cur->next)
+            {
+                DrawLine(startX + 100, startY + 25, startX + offsetX, startY + 25, BLACK);
+                DrawTriangle((Vector2){startX + offsetX - 10, startY + 20}, (Vector2){startX + offsetX - 10, startY + 30}, (Vector2){startX + offsetX, startY + 25}, BLACK);
+            }
+            cur = cur->next;
+            startX += offsetX;
+        }
+    }
 };
+
+static LinkedList myAppList;
+
+void randomizeLinkedList(LinkedList& list)
+{
+    list.clear();
+    int nodeCount = GetRandomValue(3, 10);
+    for (int i = 0; i < nodeCount; ++i)
+    {
+        list.addToTail(GetRandomValue(1, 100));
+    }
+}
 
 void runLinkedList()
 {
-    int inputValue = 10;
-    int editValue = 7;
+    // int inputValue = 10;
+    // int editValue = 7;
     bool editModeValue = false;
     bool editModeEditValue = false;
 
@@ -49,6 +91,7 @@ void runLinkedList()
     {
         BeginDrawing();
             ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+            myAppList.drawLinkedList(400, 250);
             GuiGroupBox((Rectangle){ 800, 20, 500, 100 }, "Initialize Linked List");
             if (GuiButton((Rectangle){ 850, 50, 120, 30 }, "Manual"))
             {
@@ -60,10 +103,10 @@ void runLinkedList()
             }
             if (GuiButton((Rectangle){ 1150, 50, 120, 30 }, "Random"))
             {
-                // Code to initialize linked list visualization with random values
+                randomizeLinkedList(myAppList);
             }
 
-            int startX = 20, startY = 200, offsetX = 10;
+            float startX = 20, startY = 250, offsetX = 10;
             GuiGroupBox((Rectangle){ startX, startY, 240, 320 }, "Linked List Operations");
             makeGuiLabel(startX + offsetX + 10, startY + 25, "ADD A NODE");
             makeGuiLabel(startX + offsetX + 10, startY + 60, "Value:");
