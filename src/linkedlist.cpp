@@ -3,6 +3,39 @@
 #include "raygui.h"
 #include "common.h"
 
+struct LinkedList
+{
+    struct Node
+    {
+        int value;
+        Node* next;
+        Node(int val) : value(val), next(nullptr) {}
+    };
+    Node* head;
+
+    LinkedList() : head(nullptr) {}
+
+    void addToHead(int value)
+    {
+        Node* newNode = new Node(value);
+        newNode->next = head;
+        head = newNode;
+    }
+    
+    void addToTail(int value)
+    {
+        Node* newNode = new Node(value);
+        if (!head)
+        {
+            head = newNode;
+            return;
+        }
+        Node* temp = head;
+        while (temp->next) temp = temp->next;
+        temp->next = newNode;
+    }
+};
+
 void runLinkedList()
 {
     int inputValue = 10;
@@ -30,17 +63,19 @@ void runLinkedList()
                 // Code to initialize linked list visualization with random values
             }
 
-            GuiGroupBox((Rectangle){ 10, 125, 230, 320 }, "Linked List Operations");
-            makeGuiLabel(15, 150, "GLOBAL ACTIONS");
-            makeGuiLabel(15, 190, "Value:");
-            if (GuiTextBox((Rectangle){ 130, 185, 70, 25 }, valBuffer, 16, editModeValue)) editModeValue = !editModeValue;
-            if (GuiButton((Rectangle){ 15, 225, 185, 35 }, "Add to Tail")) { /* Logic */ }
+            int startX = 20, startY = 200, offsetX = 10;
+            GuiGroupBox((Rectangle){ startX, startY, 240, 320 }, "Linked List Operations");
+            makeGuiLabel(startX + offsetX + 10, startY + 25, "ADD A NODE");
+            makeGuiLabel(startX + offsetX + 10, startY + 60, "Value:");
+            if (GuiTextBox((Rectangle){ startX + offsetX + 120, startY + 60, 70, 25 }, valBuffer, 16, editModeValue)) editModeValue = !editModeValue;
+            if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 100, 90, 35 }, "Head")) { /* Logic */ }
+            if (GuiButton((Rectangle){ startX + offsetX + 110, startY + 100, 90, 35 }, "Tail")) { /* Logic */ }
 
-            makeGuiLabel(15, 300, "SELECTION ACTIONS");
-            makeGuiLabel(15, 335, "Edit Value:");
-            if (GuiTextBox((Rectangle){ 130, 335, 70, 25 }, editBuffer, 16, editModeEditValue)) editModeEditValue = !editModeEditValue;
-            if (GuiButton((Rectangle){ 15, 380, 90, 35 }, "Update")) { /* Logic */ }
-            if (GuiButton((Rectangle){ 110, 380, 90, 35 }, "Delete")) { /* Logic */ }
+            makeGuiLabel(startX + offsetX + 10, startY + 175, "SELECTION ACTIONS");
+            makeGuiLabel(startX + offsetX + 10, startY + 210, "Edit Value:");
+            if (GuiTextBox((Rectangle){ startX + offsetX + 120, startY + 210, 70, 25 }, editBuffer, 16, editModeEditValue)) editModeEditValue = !editModeEditValue;
+            if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 250, 90, 35 }, "Update")) { /* Logic */ }
+            if (GuiButton((Rectangle){ startX + offsetX + 110, startY + 250, 90, 35 }, "Delete")) { /* Logic */ }
         EndDrawing();
     }
 }
