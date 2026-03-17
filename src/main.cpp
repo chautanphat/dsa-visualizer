@@ -14,6 +14,7 @@ int main()
     SetRandomSeed(time(NULL));
     
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    GuiSetStyle(BUTTON, BORDER_WIDTH, 1);
     SetTargetFPS(targetFPS);
 
     while (!WindowShouldClose())

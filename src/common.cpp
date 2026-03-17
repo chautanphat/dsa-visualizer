@@ -1,6 +1,28 @@
 #include "raylib.h"
 #include "raygui.h"
 
+bool DrawCustomButton(Rectangle bounds, const char* text)
+{
+    Vector2 mousePoint = GetMousePosition();
+    bool hovering = CheckCollisionPointRec(mousePoint, bounds);
+    bool clicked = false;
+
+    Color buttonColor = SKYBLUE;
+    if (hovering)
+    {
+        buttonColor = BLUE;
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) buttonColor = DARKBLUE;
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) clicked = true;
+    }
+
+    DrawRectangleRounded(bounds, 0.3, 10, buttonColor);
+    DrawRectangleRoundedLines(bounds, 0.3, 10, WHITE);
+    int textWidth = MeasureText(text, 20);
+    DrawText(text, bounds.x + (bounds.width/2) - (textWidth/2), bounds.y + (bounds.height/2) - 10, 20, WHITE);
+
+    return clicked;
+}
+
 void makeGuiLabel(float x, float y, const char* text)
 {
     GuiLabel((Rectangle){ x, y, (float)MeasureText(text, GuiGetStyle(DEFAULT, TEXT_SIZE)), 30 }, text);

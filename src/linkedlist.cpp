@@ -56,17 +56,15 @@ void LinkedList::drawLinkedList(float startX, float startY)
         DrawRectangleLinesEx(cur->box, 2, DARKGRAY);
         DrawNumberInBox(cur->box, cur->value, 20, BLACK);
 
-        DrawLine(startX + 100, startY + 25, startX + offsetX, startY + 25, BLACK);
-        DrawTriangle((Vector2){startX + offsetX - 10, startY + 20}, (Vector2){startX + offsetX - 10, startY + 30}, (Vector2){startX + offsetX, startY + 25}, BLACK);
+        if (cur->next)
+        {
+            DrawLine(startX + 100, startY + 25, startX + offsetX, startY + 25, BLACK);
+            DrawTriangle((Vector2){startX + offsetX - 10, startY + 20}, (Vector2){startX + offsetX - 10, startY + 30}, (Vector2){startX + offsetX, startY + 25}, BLACK);
+        }
 
         cur = cur->next;
         startX += offsetX;
     }
-
-    Rectangle nullBox = {startX, startY, 100.0f, 50.0f};
-    DrawRectangleRec(nullBox, LIGHTGRAY);
-    DrawRectangleLinesEx(nullBox, 2, DARKGRAY);
-    DrawTextInBox(nullBox, "NULL", 20, BLACK);
 }
 
 void LinkedList::randomize()
@@ -97,9 +95,6 @@ void LinkedList::manualUpload(const std::string &input)
 
 void runLinkedList()
 {
-    // int inputValue = 10;
-    // int editValue = 7;
-
     static char valBuffer[16] = "10";
     static char editBuffer[16] = "7";
     static char inputBuffer[256] = "1 2 3 4 5";
@@ -133,18 +128,29 @@ void runLinkedList()
             if (GuiTextBox((Rectangle){ startX + 500, startY + 30, 250, 30 }, inputBuffer, 256, editMode)) editMode = !editMode;
 
             startX = 20, startY = 250, offsetX = 10;
-            GuiGroupBox((Rectangle){ startX, startY, 240, 320 }, "Linked List Operations");
+            GuiGroupBox((Rectangle){ startX, startY, 330, 320 }, "Linked List Operations");
             makeGuiLabel(startX + offsetX + 10, startY + 25, "ADD A NODE");
             makeGuiLabel(startX + offsetX + 10, startY + 60, "Value:");
             if (GuiTextBox((Rectangle){ startX + offsetX + 120, startY + 60, 70, 25 }, valBuffer, 16, editModeValue)) editModeValue = !editModeValue;
-            // if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 100, 90, 35 }, "Head")) { /* Logic */ }
-            if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 100, 185, 35 }, "Add to Tail")) { /* Logic */ }
+            if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 100, 140, 35 }, "Add to Head"))
+            { 
+                std::istringstream iss(valBuffer);
+                int value;
+                if (iss >> value) myAppList.addToHead(value);
+            }
+            if (GuiButton((Rectangle){ startX + offsetX + 160, startY + 100, 140, 35 }, "Add to Tail"))
+            {
+                std::istringstream iss(valBuffer);
+                int value;
+                if (iss >> value) myAppList.addToTail(value);
+            }
 
             makeGuiLabel(startX + offsetX + 10, startY + 175, "SELECTION ACTIONS");
             makeGuiLabel(startX + offsetX + 10, startY + 210, "Edit Value:");
             if (GuiTextBox((Rectangle){ startX + offsetX + 120, startY + 210, 70, 25 }, editBuffer, 16, editModeEditValue)) editModeEditValue = !editModeEditValue;
             if (GuiButton((Rectangle){ startX + offsetX + 10, startY + 250, 90, 35 }, "Update")) { /* Logic */ }
             if (GuiButton((Rectangle){ startX + offsetX + 110, startY + 250, 90, 35 }, "Delete")) { /* Logic */ }
+            if (GuiButton((Rectangle){ startX + offsetX + 210, startY + 250, 90, 35 }, "Clear")) { myAppList.clear(); }
         EndDrawing();
     }
 }
