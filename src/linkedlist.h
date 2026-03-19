@@ -2,6 +2,7 @@
 #define LINKEDLIST_H
 
 #include "raylib.h"
+#include "common.h"
 #include <string>
 
 struct LinkedList
@@ -28,6 +29,6 @@ struct LinkedList
     void manualUpload(const std::string &input);
 };
 
-void runLinkedList();
+void runLinkedList(AppState &currentState);
 
 #endif

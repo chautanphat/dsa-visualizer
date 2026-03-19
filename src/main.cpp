@@ -1,12 +1,16 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raylib.h"
 #include "raygui.h"
+#include "common.h"
+#include "menu.h"
 #include "linkedlist.h"
 #include <ctime>
 
 const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
+
+static AppState currentState = MENU;
 
 int main()
 {
@@ -18,8 +22,20 @@ int main()
     SetTargetFPS(targetFPS);
 
     while (!WindowShouldClose())
-    {
-        runLinkedList();
+    {   
+        BeginDrawing();
+            switch (currentState)
+            {
+                case MENU:
+                    DrawMenu(currentState);
+                    break;
+
+                case LINKED_LIST:
+                    runLinkedList(currentState);
+                    break;
+            }
+
+        EndDrawing();
     }
 
     CloseWindow();
