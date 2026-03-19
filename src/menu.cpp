@@ -16,7 +16,6 @@ void DrawMenu(AppState &currentState)
     float paddingX = 50;  // Gap between columns
     float paddingY = 50;  // Gap between rows
 
-    // 3. Calculate Start Positions to Center the Grid
     // Total Width = (3 buttons * width) + (2 gaps * padding)
     float totalGridWidth = (3 * btnWidth) + (2 * paddingX);
     float startX = (GetScreenWidth() - totalGridWidth) / 2.0f;
