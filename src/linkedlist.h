@@ -22,6 +22,8 @@ struct LinkedList
 
     void addToHead(int value);
     void addToTail(int value);
+    void update(int index, int value);
+    void deleteNode(int index);
     void clear();
     void drawLinkedList(float startX, float startY);
     void randomize();
