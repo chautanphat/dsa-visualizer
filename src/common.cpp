@@ -45,3 +45,12 @@ void DrawNumberInBox(Rectangle box, int number, int fontSize, Color textColor)
     float textY = box.y + (box.height / 2) - (fontSize / 2.0f);
     DrawText(text, (int)textX, (int)textY, fontSize, textColor);
 }
+
+void DrawNode(Vector2 center, int value, int fontSize, float radius, float borderThick)
+{
+    DrawCircleV(center, radius, WHITE);
+    DrawRing(center, radius - borderThick, radius, 0.0f, 360.0f, 40, BLACK);
+    const char* text = TextFormat("%d", value);
+    int textWidth = MeasureText(text, fontSize);
+    DrawText(text, center.x - textWidth/2, center.y - fontSize/2, fontSize, BLACK);
+}

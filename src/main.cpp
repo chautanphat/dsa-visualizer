@@ -4,18 +4,20 @@
 #include "common.h"
 #include "menu.h"
 #include "linkedlist.h"
+#include "heap.h"
 #include <ctime>
 
 const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
 
-static AppState currentState = MENU;
+static AppState currentState = HEAP;
 
 int main()
 {
-    InitWindow(screenWidth, screenHeight, "Data Structures Visualizer");
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
     SetRandomSeed(time(NULL));
+    InitWindow(screenWidth, screenHeight, "Data Structures Visualizer");
     
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
     GuiSetStyle(BUTTON, BORDER_WIDTH, 1);
@@ -32,6 +34,9 @@ int main()
 
                 case LINKED_LIST:
                     runLinkedList(currentState);
+                    break;
+                case HEAP:
+                    runHeap(currentState);
                     break;
             }
 
