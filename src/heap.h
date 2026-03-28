@@ -29,8 +29,10 @@ struct Heap
     ~Heap();
 
     void clear();
-    void push(int value);
     void drawHeap();
+    void push(int value);
+    void pop();
+    int top();
 };
 
 void runHeap(AppState &currentState);
