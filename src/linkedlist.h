@@ -25,6 +25,8 @@ struct LinkedList
 
     int animMode = 0; 
     int targetValue = 0; 
+    int targetIndex = 0;
+    int currentIndex = 0;
 
     // int animMode = 0; 
     // Node* animPtr = nullptr;
@@ -38,13 +40,15 @@ struct LinkedList
     void addToTail(int value);
     void update(int index, int value);
     void deleteNode(int index);
-    void startSearchAnimation(int value);
     void clear();
     void drawLinkedList(float startX, float startY);
     void randomize();
     void fileUpload();
     void manualUpload(const std::string &input);
     void startAddTailAnimation(int value);
+    void startSearchAnimation(int value);
+    void startUpdateAnimation(int index, int value);
+    void startDeleteAnimation(int index);
 };
 
 void runLinkedList(AppState &currentState);

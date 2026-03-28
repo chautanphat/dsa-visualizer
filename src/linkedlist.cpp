@@ -128,6 +128,17 @@ void LinkedList::drawLinkedList(float startX, float startY)
                 animPtr = nullptr;
             }
         }
+        else if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex)
+        {
+            if (animTimer >= pauseTime) 
+            {
+                if (animMode == 3) {
+                    animPtr->value = targetValue;
+                } else if (animMode == 4) deleteNode(targetIndex);
+                animMode = 0;
+                animPtr = nullptr;
+            }
+        }
         else if (animTimer >= totalStepTime)
         {
             animTimer = 0.0f;
@@ -135,6 +146,7 @@ void LinkedList::drawLinkedList(float startX, float startY)
             if (animPtr->next != nullptr)
             {
                 animPtr = animPtr->next;
+                currentIndex++;
             }
             else
             {
@@ -155,7 +167,8 @@ void LinkedList::drawLinkedList(float startX, float startY)
         float slideTime = 0.15f;
         float progress = 0.0f;
         
-        if (animTimer > pauseTime) {
+        if (animTimer > pauseTime)
+        {
             progress = (animTimer - pauseTime) / slideTime;
             if (progress > 1.0f) progress = 1.0f; 
         }
@@ -168,21 +181,60 @@ void LinkedList::drawLinkedList(float startX, float startY)
         
         Color boxColor = ORANGE;
         if (animMode == 2 && animPtr->value == targetValue) boxColor = RED;
+        if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex)
+            boxColor = (animMode == 3) ? GREEN : RED;
 
         DrawRectangleLinesEx(windowBox, 4, boxColor);
         DrawText("temp", windowBox.x + 35, windowBox.y - 20, 16, boxColor);
     }
 }
 
+
 void LinkedList::startAddTailAnimation(int value)
 {
     if (!head) { addToHead(value); return; }
     
-    animMode = 1; // Mode 1: Add Tail
+    animMode = 1;
     animPtr = head;
     targetValue = value;
     animTimer = 0.0f;
-    searchResult = nullptr; // Clear any old search highlights
+    searchResult = nullptr;
+}
+
+void LinkedList::startSearchAnimation(int value)
+{
+    if (!head) return;
+    
+    animMode = 2;
+    animPtr = head;
+    targetValue = value;
+    animTimer = 0.0f;
+    searchResult = nullptr;
+}
+
+void LinkedList::startUpdateAnimation(int index, int value)
+{
+    if (!head || index < 0) return;
+    
+    animMode = 3;
+    animPtr = head;
+    targetIndex = index;
+    targetValue = value;
+    currentIndex = 0;
+    animTimer = 0.0f;
+    searchResult = nullptr;
+}
+
+void LinkedList::startDeleteAnimation(int index)
+{
+    if (!head || index < 0) return; 
+    
+    animMode = 4;
+    animPtr = head;
+    targetIndex = index;
+    currentIndex = 0;
+    animTimer = 0.0f;
+    searchResult = nullptr;
 }
 
 void LinkedList::randomize()
@@ -209,17 +261,6 @@ void LinkedList::manualUpload(const std::string &input)
     {
         this->addToTail(value);
     }
-}
-
-void LinkedList::startSearchAnimation(int value)
-{
-    if (!head) return;
-    
-    animMode = 2; // Mode 2: Search
-    animPtr = head;
-    targetValue = value;
-    animTimer = 0.0f;
-    searchResult = nullptr; // Clear any old search highlights
 }
 
 static void DrawInitPanel(float x, float y, LinkedList& list, char* inputBuf, bool& editMode)
@@ -266,22 +307,22 @@ static void DrawUpdatePanel(float x, float y, LinkedList& list, char* idxBuf, bo
     if (GuiTextBox((Rectangle){ x + 70, y + 35, 65, 25 }, idxBuf, 16, editModeIdx)) editModeIdx = !editModeIdx;
     if (GuiTextBox((Rectangle){ x + 230, y + 35, 65, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
     
-    if (GuiButton((Rectangle){ x, y + 75, 90, 35 }, "Update")) {
+    if (GuiButton((Rectangle){ x, y + 75, 90, 35 }, "Update"))
+    {
         std::istringstream issIndex(idxBuf);
         std::istringstream issValue(valBuf);
         int index, value;
-        if (issIndex >> index && issValue >> value && index >= 0) list.update(index, value);        
+        if (issIndex >> index && issValue >> value && index >= 0 && list.animMode == 0) list.startUpdateAnimation(index, value);
     }
     
-    if (GuiButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Delete")) {
+    if (GuiButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Delete"))
+    {
         std::istringstream issIndex(idxBuf);
         int index;
-        if (issIndex >> index) list.deleteNode(index);
+        if (issIndex >> index && index >= 0 && list.animMode == 0) list.startDeleteAnimation(index);
     }
     
-    if (GuiButton((Rectangle){ x + 200, y + 75, 90, 35 }, "Clear")) { 
-        list.clear(); 
-    }
+    if (GuiButton((Rectangle){ x + 200, y + 75, 90, 35 }, "Clear")) list.clear(); 
 }
 
 static void DrawSearchPanel(float x, float y, LinkedList& list, char* searchBuf, bool& editModeSearch)
