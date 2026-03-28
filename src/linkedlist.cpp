@@ -115,11 +115,38 @@ void LinkedList::drawLinkedList(float startX, float startY)
     {
         float pauseTime = 0.5f;
         float slideTime = 0.15f;
-        float totalStepTime = pauseTime + slideTime;
+        float progress = 0.0f;
 
         animTimer += GetFrameTime(); 
+        
+        if (animTimer > pauseTime)
+        {
+            progress = (animTimer - pauseTime) / slideTime;
+            if (progress > 1.0f) progress = 1.0f; 
+        }
 
-        if (animMode == 2 && animPtr->value == targetValue) 
+        float currentX = animPtr->box.x;
+        float currentY = animPtr->box.y;
+        float slidingX = currentX + (120.0f * progress);
+        
+        Rectangle windowBox = { slidingX - 5, currentY - 5, 110.0f, 60.0f };
+        
+        Color boxColor = ORANGE;
+        if (animMode == 2 && animPtr->value == targetValue) boxColor = RED;
+        if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex)
+            boxColor = (animMode == 3) ? GREEN : RED;
+
+        DrawRectangleLinesEx(windowBox, 4, boxColor);
+        DrawText("cur", windowBox.x + 45, windowBox.y - 20, 16, boxColor);
+    }
+
+    if (animMode != 0 && animPtr != nullptr)
+    {
+        float pauseTime = 0.5f;
+        float slideTime = 0.15f;
+        float totalStepTime = pauseTime + slideTime;
+
+        if (animMode == 2 && animPtr->value == targetValue)
         {
             if (animTimer >= pauseTime) 
             {
@@ -160,35 +187,7 @@ void LinkedList::drawLinkedList(float startX, float startY)
             }
         }
     }
-
-    if (animMode != 0 && animPtr != nullptr)
-    {
-        float pauseTime = 0.5f;
-        float slideTime = 0.15f;
-        float progress = 0.0f;
-        
-        if (animTimer > pauseTime)
-        {
-            progress = (animTimer - pauseTime) / slideTime;
-            if (progress > 1.0f) progress = 1.0f; 
-        }
-
-        float currentX = animPtr->box.x;
-        float currentY = animPtr->box.y;
-        float slidingX = currentX + (120.0f * progress);
-        
-        Rectangle windowBox = { slidingX - 5, currentY - 5, 110.0f, 60.0f };
-        
-        Color boxColor = ORANGE;
-        if (animMode == 2 && animPtr->value == targetValue) boxColor = RED;
-        if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex)
-            boxColor = (animMode == 3) ? GREEN : RED;
-
-        DrawRectangleLinesEx(windowBox, 4, boxColor);
-        DrawText("temp", windowBox.x + 35, windowBox.y - 20, 16, boxColor);
-    }
 }
-
 
 void LinkedList::startAddTailAnimation(int value)
 {
@@ -344,7 +343,7 @@ static void DrawSearchPanel(float x, float y, LinkedList& list, char* searchBuf,
 void runLinkedList(AppState &currentState)
 {
     static char valBuffer[16] = "10";
-    static char indexBuffer[16] = "7";
+    static char indexBuffer[16] = "2";
     static char valSearchBuffer[16] = "7";
     static char inputBuffer[256] = "1 2 3 4 5";
     static char updateValBuffer[16] = "5";
