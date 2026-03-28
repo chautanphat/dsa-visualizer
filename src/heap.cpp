@@ -24,7 +24,7 @@ Heap::~Heap() { clear(); }
 
 void Heap::push(int value)
 {
-    float x = 700, y = 100, delta_x = 1024, delta_y = 128;
+    float x = 700, y = 100, delta_x = 512, delta_y = 128;
     int level = 0;
     Node* parent = nullptr;
     if (sz > 0)
