@@ -264,13 +264,14 @@ void LinkedList::manualUpload(const std::string &input)
 
 static void DrawInitPanel(float x, float y, LinkedList& list, char* inputBuf, bool& editMode)
 {
-    GuiGroupBox((Rectangle){ x, y, 800, 80 }, "Initialize Linked List");
+    DrawRectangleLinesEx((Rectangle){ x, y, 800, 80 }, 1, BLACK);
     
     if (GuiButton((Rectangle){ x + 50, y + 30, 120, 30 }, "Random")) list.randomize();
     if (GuiButton((Rectangle){ x + 200, y + 30, 120, 30 }, "Upload")) list.fileUpload();
     if (GuiButton((Rectangle){ x + 350, y + 30, 120, 30 }, "Manual")) list.manualUpload(inputBuf);
     
-    if (GuiTextBox((Rectangle){ x + 500, y + 30, 250, 30 }, inputBuf, 256, editMode)) {
+    if (GuiTextBox((Rectangle){ x + 500, y + 30, 250, 30 }, inputBuf, 256, editMode))
+    {
         editMode = !editMode;
     }
 }
@@ -355,14 +356,11 @@ void runLinkedList(AppState &currentState)
     static bool updateValEditMode = false;
    
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
-    
-    if (GuiButton((Rectangle){ 10, 10, 60, 30 }, "Back"))
-        currentState = MENU;
 
     myAppList.drawLinkedList(400, 250);
     DrawInitPanel(600, 20, myAppList, inputBuffer, editMode);
     float opsX = 20, opsY = 250;
-    GuiGroupBox((Rectangle){ opsX, opsY, 330, 450 }, "Linked List Operations");
+    DrawRectangleLinesEx((Rectangle){ opsX, opsY, 330, 450 }, 1, BLACK);
     DrawAddPanel(opsX + 20, opsY + 25, myAppList, valBuffer, editModeValue);
     DrawUpdatePanel(opsX + 20, opsY + 150, myAppList, indexBuffer, editModeIndex, updateValBuffer, updateValEditMode);
     DrawSearchPanel(opsX + 20, opsY + 300, myAppList, valSearchBuffer, valSearchEditMode);

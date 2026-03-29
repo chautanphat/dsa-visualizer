@@ -39,6 +39,10 @@ int main()
                     runHeap(currentState);
                     break;
             }
+            if (currentState != MENU)
+            {
+                if (GuiButton((Rectangle){ 20, 20, 60, 30 }, "Back")) currentState = MENU;
+            }
 
         EndDrawing();
     }

@@ -166,14 +166,10 @@ void runHeap(AppState &currentState)
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-    if (GuiButton((Rectangle){ 10, 10, 60, 30 }, "Back")) {
-        currentState = MENU;
-    }
-
     myHeap.drawHeap();
 
     float opsX = 20, opsY = 250;
-    GuiGroupBox((Rectangle){ opsX, opsY, 330, 450 }, "Heap Operations");
+    DrawRectangleLinesEx((Rectangle){ opsX, opsY, 330, 450 }, 1, BLACK);
     DrawUpdatePanel(opsX + 20, opsY + 25, myHeap, valBuffer, editModeValue);
     // DrawPopPanel()
 }
