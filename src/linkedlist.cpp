@@ -127,7 +127,7 @@ void LinkedList::drawLinkedList(float startX, float startY)
 
         float currentX = animPtr->box.x;
         float currentY = animPtr->box.y;
-        float slidingX = currentX + (120.0f * progress);
+        float slidingX = currentX + (offsetX * progress);
         
         Rectangle windowBox = { slidingX - 5, currentY - 5, 110.0f, 60.0f };
         
@@ -159,9 +159,9 @@ void LinkedList::drawLinkedList(float startX, float startY)
         {
             if (animTimer >= pauseTime) 
             {
-                if (animMode == 3) {
+                if (animMode == 3)
                     animPtr->value = targetValue;
-                } else if (animMode == 4) deleteNode(targetIndex);
+                else if (animMode == 4) deleteNode(targetIndex);
                 animMode = 0;
                 animPtr = nullptr;
             }
@@ -281,7 +281,8 @@ static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool&
     makeGuiLabel(x, y, "ADD A NODE");
     makeGuiLabel(x, y + 35, "Value:");
     
-    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) {
+    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal))
+    {
         editModeVal = !editModeVal;
     }
     
