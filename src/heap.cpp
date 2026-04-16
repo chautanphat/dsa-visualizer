@@ -48,9 +48,9 @@ void Heap::insertNodeOnly(int value)
     {
         parent = arr[(sz-1)/2];
         delta_x = parent->delta_x;
-        x = parent->x + (sz % 2 == 1 ? -1 : 1)*delta_x;
-        y = parent->y+delta_y;
-        level = parent->level+1;
+        x = parent->x + (sz % 2 == 1 ? -1 : 1) * delta_x;
+        y = parent->y + delta_y;
+        level = parent->level + 1;
     }
 
     Node* child = new Node(value, x, y, level, delta_x/2, parent);
@@ -88,7 +88,7 @@ void Heap::pop()
 
 void Heap::removeLastNodeOnly()
 {
-    std::swap(arr[0]->value, arr[sz-1]->value);
+    std::swap(arr[0]->value, arr[sz - 1]->value);
     Node* lastNode = arr[sz - 1];
     Node* p = lastNode->parent;
     if (p != nullptr)
@@ -168,7 +168,6 @@ void Heap::updateAnimation()
 {
     if (animMode == 0) return;
 
-    // --- GIAI ĐOẠN 1: DI CHUYỂN THỰC THỂ (LERP) ---
     if (isMoving) 
     {
         moveTimer += GetFrameTime();
@@ -177,13 +176,12 @@ void Heap::updateAnimation()
 
         if (t >= 1.0f) 
         {
-            if (animMode == 5) // Vừa kết thúc chuyến bay của Nút Cuối -> Root
+            if (animMode == 5)
             {
-                // Thực hiện cấu trúc: Đổi chỗ và xóa vật lý
                 removeLastNodeOnly(); 
                 
-                // Trả tọa độ Root mới về đúng khung xương
-                if (sz > 0) {
+                if (sz > 0)
+                {
                     arr[0]->vX = arr[0]->x; 
                     arr[0]->vY = arr[0]->y;
                 }
@@ -191,13 +189,11 @@ void Heap::updateAnimation()
                 isMoving = false;
                 moveTimer = 0.0f;
                 
-                // Chuyển sang Mode 6 (Chờ 1 nhịp sau khi bay xong)
                 animMode = 6; 
                 animTimer = 0.0f;
             } 
             else 
             {
-                // Bay bình thường cho Heapify
                 std::swap(arr[moveIdxA]->value, arr[moveIdxB]->value);
                 
                 arr[moveIdxA]->vX = arr[moveIdxA]->x; arr[moveIdxA]->vY = arr[moveIdxA]->y;
@@ -211,7 +207,6 @@ void Heap::updateAnimation()
         } 
         else 
         {
-            // Quá trình bay LERP
             arr[moveIdxA]->vX = arr[moveIdxA]->x + (arr[moveIdxB]->x - arr[moveIdxA]->x) * t;
             arr[moveIdxA]->vY = arr[moveIdxA]->y + (arr[moveIdxB]->y - arr[moveIdxA]->y) * t;
             
@@ -221,7 +216,6 @@ void Heap::updateAnimation()
         return;
     }
 
-    // --- GIAI ĐOẠN 2: PRE-HIGHLIGHT ---
     if (targetIdx == -1) 
     {
         if (animMode == 1 && curIdx > 0) targetIdx = (curIdx - 1) / 2;
@@ -234,7 +228,6 @@ void Heap::updateAnimation()
         }
     }
 
-    // --- GIAI ĐOẠN 3: TIMING & CHUYỂN TRẠNG THÁI ---
     animTimer += GetFrameTime();
     float safeSpeed = (animSpeed > 0.0f) ? animSpeed : 0.6f;
 
@@ -243,38 +236,42 @@ void Heap::updateAnimation()
         animTimer = 0.0f;
 
         if (animMode == 3) animMode = 4;
-        else if (animMode == 4) // Bước 2: Đã tàng hình Root xong -> Kích hoạt nút cuối bay lên
+        else if (animMode == 4)
         {
             animMode = 5;
             isMoving = true;
-            moveIdxA = sz - 1; // Nút cuối bay
-            moveIdxB = 0;      // Nút gốc bay xuống (nhưng vì gốc đang tàng hình nên người dùng chỉ thấy nút cuối bay lên)
-            curIdx = sz - 1;   // Đặt nút cuối làm nút hiện tại để highlight
+            moveIdxA = sz - 1;
+            moveIdxB = 0;
+            curIdx = sz - 1;
             targetIdx = 0;
         }
-        else if (animMode == 6) // Bước 3: Bay lên xong, đợi 1 khoảng xong -> Bắt đầu Heap Down
+        else if (animMode == 6)
         {
             animMode = 2; 
             curIdx = 0;
             targetIdx = -1;
         }
-        // CÁC BƯỚC HEAPIFY BÌNH THƯỜNG
-        else if (animMode == 1) // UP-HEAP
+        else if (animMode == 1)
         {
             if (curIdx > 0 && targetIdx != -1) 
             {
-                if (arr[curIdx]->value > arr[targetIdx]->value) {
-                    isMoving = true; moveIdxA = curIdx; moveIdxB = targetIdx;
-                } else { animMode = 0; targetIdx = -1; }
-            } else { animMode = 0; targetIdx = -1; }
+                if (arr[curIdx]->value > arr[targetIdx]->value)
+                {
+                    isMoving = true;
+                    moveIdxA = curIdx;
+                    moveIdxB = targetIdx;
+                } else animMode = 0,targetIdx = -1;
+            } else animMode = 0, targetIdx = -1;
         }
-        else if (animMode == 2) // DOWN-HEAP
+        else if (animMode == 2)
         {
             if (targetIdx != -1 && arr[targetIdx]->value > arr[curIdx]->value) 
             {
-                isMoving = true; moveIdxA = curIdx; moveIdxB = targetIdx;
+                isMoving = true;
+                moveIdxA = curIdx;
+                moveIdxB = targetIdx;
             } 
-            else { animMode = 0; targetIdx = -1; }
+            else animMode = 0, targetIdx = -1;
         }
     }
 }
