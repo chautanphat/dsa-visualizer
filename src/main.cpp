@@ -11,7 +11,7 @@ const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
 
-static AppState currentState = LINKED_LIST;
+static AppState currentState = HEAP;
 
 int main()
 {
