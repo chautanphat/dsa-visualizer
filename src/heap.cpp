@@ -306,7 +306,7 @@ static void draw(Heap::Node* cur, Heap& heap)
     {
         if (heap.animMode != 0)
         {
-            if (heap.animMode == 3 && myIdx == 0) DrawCircleV(drawPos, 35, RED); // Root sắp xóa báo Đỏ
+            if (heap.animMode == 3 && myIdx == 0) DrawCircleV(drawPos, 35, RED);
             else if (heap.animMode == 5 && myIdx == heap.moveIdxA) DrawCircleV(drawPos, 35, RED);
             else if (myIdx == heap.curIdx) DrawCircleV(drawPos, 35, ORANGE);
             else if (myIdx == heap.targetIdx) DrawCircleV(drawPos, 35, RED);
