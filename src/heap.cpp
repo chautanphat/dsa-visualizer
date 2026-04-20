@@ -3,6 +3,7 @@
 #include "raygui.h"
 #include "common.h"
 #include <vector>
+#include<string.h>
 #include <sstream>
 #include <fstream>
 
@@ -112,31 +113,80 @@ void Heap::clear()
 {
     sz = 0;
     deleteTree(head);
+    arr.clear();
+}
+
+static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& editMode)
+{
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
+    bool isBusy = (heap.animMode != 0 || heap.isMoving);
+
+    if (isBusy) GuiSetState(STATE_DISABLED);
+
+    makeGuiLabel(x, y, "Initialize Heap");
+    
+    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
+    {
+        heap.clear(); 
+
+        int n = GetRandomValue(5, 10); 
+
+        for (int i = 0; i < n; i++)
+        {
+            int v = GetRandomValue(1, 99);
+            heap.push(v);
+        }
+    }
+
+    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
+    { 
+        
+    }
+
+    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
+    { 
+        std::istringstream iss(inputBuf);
+        int value;
+        heap.clear();
+        while (iss >> value && heap.sz < 31)
+        {
+            heap.push(value);
+        }
+    }
+
+    if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 16, editMode)) editMode = !editMode;
+
+    if (!isBusy) GuiSetState(STATE_NORMAL);
 }
 
 static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
 {
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 250 }, 1, BLACK);
     bool isBusy = (heap.animMode != 0 || heap.isMoving);
+
+    if (isBusy) GuiSetState(STATE_DISABLED);
 
     makeGuiLabel(x, y, "Insert a node");
     makeGuiLabel(x, y + 35, "Value:");
     
-    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal))
-    {
-        editModeVal = !editModeVal;
-    }
+    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
     
-    if (GuiButton((Rectangle){ x, y + 75, 140, 35 }, "Insert"))
+    if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
         int value;
-        if (iss >> value && !isBusy) heap.startPushAnimation(value);
+        if (iss >> value && heap.sz < 31)
+        {
+            heap.startPushAnimation(value);
+            strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
+        }
     }
 
-    if (GuiButton((Rectangle){ x + 150, y + 75, 140, 35 }, "Pop"))
-    { 
-        if (!isBusy) heap.startPopAnimation();
-    }
+    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Pop")) heap.startPopAnimation();
+
+    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
+
+    if (!isBusy) GuiSetState(STATE_NORMAL);
 }
 
 void Heap::startPushAnimation(int value)
@@ -325,23 +375,17 @@ void Heap::drawHeap()
 void runHeap(AppState &currentState)
 {
     static char valBuffer[16] = "10";
-    // static char indexBuffer[16] = "7";
-    // static char valSearchBuffer[16] = "7";
-    // static char inputBuffer[256] = "1 2 3 4 5";
-    // static char updateValBuffer[16] = "5";
+    static char inputBuffer[256] = "1 2 3 4 5";
 
     static bool editModeValue = false;
-    // static bool editModeIndex = false;
-    // static bool editMode = false;
-    // static bool valSearchEditMode = false;
-    // static bool updateValEditMode = false;
+    static bool editMode = false;
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
     myHeap.drawHeap();
 
-    float opsX = 20, opsY = 250;
-    DrawRectangleLinesEx((Rectangle){ opsX, opsY, 330, 450 }, 1, BLACK);
-    DrawUpdatePanel(opsX + 20, opsY + 25, myHeap, valBuffer, editModeValue);
-    // DrawPopPanel()
+    float opsX = 20, opsY = 150;
+
+    DrawInitPanel(opsX + 20, opsY + 25, myHeap, inputBuffer, editMode);
+    DrawUpdatePanel(opsX + 20, opsY + 325, myHeap, valBuffer, editModeValue);
 }
