@@ -20,6 +20,14 @@ struct Heap
         Node(int val, float _x, float _y, int _level, float delta_x, Node* _parent);
     };
 
+    struct Snapshot
+    {
+        std::vector<int> values;
+        int sz;
+        int animMode;
+        int curIdx, targetIdx;
+    };
+
     std::vector<Node*> arr;
     int sz;
     Node* head;
@@ -52,6 +60,10 @@ struct Heap
     void startPushAnimation(int value);
     void startPopAnimation();
     void updateAnimation();
+    
+    std::vector<Snapshot> history;
+    void captureSnapshot();
+    void restoreSnapshot(const Snapshot& sn);
 };
 
 void runHeap(AppState &currentState);

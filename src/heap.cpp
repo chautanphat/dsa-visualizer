@@ -20,7 +20,7 @@ static void deleteTree(Heap::Node* &cur)
 
 Heap::Node::Node(int val, float _x, float _y, int _level, float _delta_x, Node* _parent) : value(val), x(_x), y(_y), level(_level), delta_x(_delta_x), parent(_parent), left(nullptr), right(nullptr) {}
 
-Heap::Heap() : sz(0), head(nullptr) {}
+Heap::Heap() : arr(31, nullptr), sz(0), head(nullptr) {}
 Heap::~Heap() { clear(); }
 
 void Heap::push(int value)
@@ -41,27 +41,26 @@ void Heap::push(int value)
 
 void Heap::insertNodeOnly(int value)
 {
-    float x = 1000, y = 100, delta_x = 512, delta_y = 128;
-    int level = 0;
-    Node* parent = nullptr;
+    if (sz >= 31) return;
+    Node* p = (sz > 0) ? arr[(sz - 1) / 2] : nullptr;
+    float dx = p ? p->delta_x : 512.0f;
+    float x  = p ? p->x + (sz % 2 ? -1 : 1) * dx : 1000.0f;
+    float y  = p ? p->y + 128.0f : 100.0f;
+    int lvl  = p ? p->level + 1 : 0;
 
-    if (sz > 0)
+    if (!arr[sz]) arr[sz] = new Node(value, x, y, lvl, dx / 2, p);
+    else
     {
-        parent = arr[(sz-1)/2];
-        delta_x = parent->delta_x;
-        x = parent->x + (sz % 2 == 1 ? -1 : 1) * delta_x;
-        y = parent->y + delta_y;
-        level = parent->level + 1;
+        Node* n = arr[sz];
+        n->value = value;
+        n->x = n->vX = x; n->y = n->vY = y;
+        n->level = lvl; n->delta_x = dx / 2; n->parent = p;
+        n->left = n->right = nullptr;
     }
 
-    Node* child = new Node(value, x, y, level, delta_x/2, parent);
-    if (parent != nullptr)
-    {
-        if (sz % 2 == 1) parent->left = child;
-        else parent->right = child;
-    } else head = child;
+    if (p) (sz % 2 ? p->left : p->right) = arr[sz];
+    else head = arr[0];
 
-    arr.push_back(child);
     sz++;
 }
 
@@ -75,9 +74,6 @@ void Heap::removeLastNodeOnly()
         if (p->left == lastNode) p->left = nullptr;
         else if (p->right == lastNode) p->right = nullptr;
     } else head = nullptr;
-
-    delete lastNode;
-    arr.pop_back();
     sz--;
 }
 
@@ -113,16 +109,31 @@ void Heap::clear()
 {
     sz = 0;
     deleteTree(head);
-    arr.clear();
+    arr.assign(31, nullptr);
+    head = nullptr;
 }
 
 static void DrawForwardButton(float x, float y, Heap& heap)
 {
     GuiSetState(STATE_NORMAL);
-    if (heap.mode != 1) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 100, 30 }, "Forward >")) 
+    if (heap.mode != 1 || heap.animMode == 0) GuiSetState(STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) 
     {
         heap.animSpeed = 0.0f; 
+    }
+    GuiSetState(STATE_NORMAL);
+}
+
+static void DrawBackwardButton(float x, float y, Heap& heap)
+{
+    if (heap.mode != 1 || heap.history.empty()) GuiSetState(STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
+    {
+        Heap::Snapshot lastState = heap.history.back();
+        heap.history.pop_back();
+        heap.restoreSnapshot(lastState);
+        
+        if (heap.mode == 1) heap.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
 }
@@ -151,7 +162,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
     {
         heap.clear(); 
 
-        int n = GetRandomValue(5, 10); 
+        int n = GetRandomValue(5, 30); 
 
         for (int i = 0; i < n; i++)
         {
@@ -161,7 +172,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
     }
 
     if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
-    { 
+    {
         
     }
 
@@ -176,7 +187,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
         }
     }
 
-    if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 16, editMode)) editMode = !editMode;
+    if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
 }
 
 static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
@@ -188,6 +199,8 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
     
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
     
+    int curState = GuiGetState();
+    if (heap.sz >= 31) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
@@ -198,16 +211,19 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
             strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
         }
     }
+    GuiSetState(curState);
 
+    if (heap.sz == 0) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Pop")) heap.startPopAnimation();
 
     if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
-
 }
 
 void Heap::startPushAnimation(int value)
 {
+    history.clear();
     insertNodeOnly(value);
+
     animMode = 1;
     curIdx = sz - 1;
     targetIdx = (curIdx > 0) ? (curIdx - 1) / 2 : -1;
@@ -219,6 +235,7 @@ void Heap::startPushAnimation(int value)
 
 void Heap::startPopAnimation()
 {
+    history.clear();
     if (sz <= 0 || animMode != 0 || isMoving) return;
 
     if (sz == 1)
@@ -305,6 +322,8 @@ void Heap::updateAnimation()
 
     if (animTimer >= safeSpeed) 
     {
+        captureSnapshot();
+
         animTimer = 0.0f;
 
         if (mode == 1) animSpeed = 999999.0f; 
@@ -350,20 +369,51 @@ void Heap::updateAnimation()
     }
 }
 
+void Heap::captureSnapshot()
+{
+    Snapshot snapshot;
+    snapshot.sz = sz;
+    snapshot.animMode = animMode;
+    snapshot.curIdx = curIdx;
+    snapshot.targetIdx = targetIdx;
+
+    for (int i = 0; i < sz; i++) snapshot.values.push_back(arr[i]->value);
+    
+    history.push_back(snapshot);
+}
+
+void Heap::restoreSnapshot(const Snapshot& snapshot)
+{
+    sz = snapshot.sz;
+    animMode = snapshot.animMode;
+    curIdx = snapshot.curIdx;
+    targetIdx = snapshot.targetIdx;
+
+    for (int i = 0; i < sz; i++) arr[i]->value = snapshot.values[i];
+
+    for (int i = 0; i < sz; i++)
+    {
+        arr[i]->left = (2 * i + 1 < sz) ? arr[2 * i + 1] : nullptr;
+        arr[i]->right = (2 * i + 2 < sz) ? arr[2 * i + 2] : nullptr;
+        if (i > 0) arr[i]->parent = arr[(i - 1) / 2];
+    }
+    head = (sz > 0) ? arr[0] : nullptr;
+}
+
 static void draw(Heap::Node* cur, Heap& heap)
 {
     if (!cur) return;
     
     if (cur->left != nullptr)
     {
-        bool isMovingEdge = (heap.animMode == 5 && cur->left == heap.arr[heap.sz - 1]);
+        bool isMovingEdge = (heap.sz > 0 && heap.animMode == 5 && cur->left == heap.arr[heap.sz - 1]);
         if (!isMovingEdge) DrawLineEx({cur->x, cur->y}, {cur->left->x, cur->left->y}, 3.0f, BLACK);
         draw(cur->left, heap);
     }
     
     if (cur->right != nullptr)
     {
-        bool isMovingEdge = (heap.animMode == 5 && cur->right == heap.arr[heap.sz - 1]);
+        bool isMovingEdge = (heap.sz > 0 && heap.animMode == 5 && cur->right == heap.arr[heap.sz - 1]);
         if (!isMovingEdge) DrawLineEx({cur->x, cur->y}, {cur->right->x, cur->right->y}, 3.0f, BLACK);
         draw(cur->right, heap);
     }
@@ -400,7 +450,7 @@ void Heap::drawHeap()
 void runHeap(AppState &currentState)
 {
     static char valBuffer[16] = "10";
-    static char inputBuffer[256] = "1 2 3 4 5";
+    static char inputBuffer[2048] = "1 2 3 4 5";
 
     static bool editModeValue = false;
     static bool editMode = false;
@@ -411,7 +461,8 @@ void runHeap(AppState &currentState)
 
     float X = 60, Y = 150;
     
-    DrawForwardButton(800, 800, myHeap);
+    DrawForwardButton(875, 800, myHeap);
+    DrawBackwardButton(725, 800, myHeap);
 
     bool isBusy = (myHeap.animMode != 0 || myHeap.isMoving);
     if (isBusy) GuiSetState(STATE_DISABLED);
