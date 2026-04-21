@@ -3,6 +3,7 @@
 #include "raygui.h"
 #include "common.h"
 #include <vector>
+#include<string.h>
 #include <sstream>
 #include <fstream>
 
@@ -40,7 +41,7 @@ void Heap::push(int value)
 
 void Heap::insertNodeOnly(int value)
 {
-    float x = 950, y = 100, delta_x = 512, delta_y = 128;
+    float x = 1000, y = 100, delta_x = 512, delta_y = 128;
     int level = 0;
     Node* parent = nullptr;
 
@@ -62,6 +63,22 @@ void Heap::insertNodeOnly(int value)
 
     arr.push_back(child);
     sz++;
+}
+
+void Heap::removeLastNodeOnly()
+{
+    std::swap(arr[0]->value, arr[sz - 1]->value);
+    Node* lastNode = arr[sz - 1];
+    Node* p = lastNode->parent;
+    if (p != nullptr)
+    {
+        if (p->left == lastNode) p->left = nullptr;
+        else if (p->right == lastNode) p->right = nullptr;
+    } else head = nullptr;
+
+    delete lastNode;
+    arr.pop_back();
+    sz--;
 }
 
 void Heap::pop()
@@ -86,22 +103,6 @@ void Heap::pop()
     }
 }
 
-void Heap::removeLastNodeOnly()
-{
-    std::swap(arr[0]->value, arr[sz - 1]->value);
-    Node* lastNode = arr[sz - 1];
-    Node* p = lastNode->parent;
-    if (p != nullptr)
-    {
-        if (p->left == lastNode) p->left = nullptr;
-        else if (p->right == lastNode) p->right = nullptr;
-    } else head = nullptr;
-
-    delete lastNode;
-    arr.pop_back();
-    sz--;
-}
-
 int Heap::top()
 {
     if (sz == 0) return -1;
@@ -112,31 +113,96 @@ void Heap::clear()
 {
     sz = 0;
     deleteTree(head);
+    arr.clear();
+}
+
+static void DrawForwardButton(float x, float y, Heap& heap)
+{
+    GuiSetState(STATE_NORMAL);
+    if (heap.mode != 1) GuiSetState(STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y, 100, 30 }, "Forward >")) 
+    {
+        heap.animSpeed = 0.0f; 
+    }
+    GuiSetState(STATE_NORMAL);
+}
+
+static void DrawToggle(float x, float y, Heap& heap)
+{
+    int oldMode = heap.mode;
+
+    makeGuiLabel(x + 45, y - 30, "Animation Mode:");
+    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &heap.mode);
+
+    if (heap.mode != oldMode)
+    {
+        if (heap.mode == 1) heap.animSpeed = 999999.0f; 
+        else heap.animSpeed = 0.6f;
+    }
+}
+
+static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& editMode)
+{
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
+
+    makeGuiLabel(x, y, "Initialize Heap");
+    
+    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
+    {
+        heap.clear(); 
+
+        int n = GetRandomValue(5, 10); 
+
+        for (int i = 0; i < n; i++)
+        {
+            int v = GetRandomValue(1, 99);
+            heap.push(v);
+        }
+    }
+
+    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
+    { 
+        
+    }
+
+    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
+    { 
+        std::istringstream iss(inputBuf);
+        int value;
+        heap.clear();
+        while (iss >> value && heap.sz < 31)
+        {
+            heap.push(value);
+        }
+    }
+
+    if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 16, editMode)) editMode = !editMode;
 }
 
 static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
 {
-    bool isBusy = (heap.animMode != 0 || heap.isMoving);
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 250 }, 1, BLACK);
 
     makeGuiLabel(x, y, "Insert a node");
     makeGuiLabel(x, y + 35, "Value:");
     
-    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal))
-    {
-        editModeVal = !editModeVal;
-    }
+    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
     
-    if (GuiButton((Rectangle){ x, y + 75, 140, 35 }, "Insert"))
+    if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
         int value;
-        if (iss >> value && !isBusy) heap.startPushAnimation(value);
+        if (iss >> value && heap.sz < 31)
+        {
+            heap.startPushAnimation(value);
+            strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
+        }
     }
 
-    if (GuiButton((Rectangle){ x + 150, y + 75, 140, 35 }, "Pop"))
-    { 
-        if (!isBusy) heap.startPopAnimation();
-    }
+    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Pop")) heap.startPopAnimation();
+
+    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
+
 }
 
 void Heap::startPushAnimation(int value)
@@ -146,6 +212,9 @@ void Heap::startPushAnimation(int value)
     curIdx = sz - 1;
     targetIdx = (curIdx > 0) ? (curIdx - 1) / 2 : -1;
     animTimer = 0.0f;
+
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.6f;
 }
 
 void Heap::startPopAnimation()
@@ -162,6 +231,9 @@ void Heap::startPopAnimation()
     curIdx = 0; 
     targetIdx = -1; 
     animTimer = 0.0f;
+
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.6f;
 }
 
 void Heap::updateAnimation() 
@@ -229,11 +301,13 @@ void Heap::updateAnimation()
     }
 
     animTimer += GetFrameTime();
-    float safeSpeed = (animSpeed > 0.0f) ? animSpeed : 0.6f;
+    float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.6f;
 
     if (animTimer >= safeSpeed) 
     {
         animTimer = 0.0f;
+
+        if (mode == 1) animSpeed = 999999.0f; 
 
         if (animMode == 3) animMode = 4;
         else if (animMode == 4)
@@ -286,6 +360,7 @@ static void draw(Heap::Node* cur, Heap& heap)
         if (!isMovingEdge) DrawLineEx({cur->x, cur->y}, {cur->left->x, cur->left->y}, 3.0f, BLACK);
         draw(cur->left, heap);
     }
+    
     if (cur->right != nullptr)
     {
         bool isMovingEdge = (heap.animMode == 5 && cur->right == heap.arr[heap.sz - 1]);
@@ -306,7 +381,7 @@ static void draw(Heap::Node* cur, Heap& heap)
     {
         if (heap.animMode != 0)
         {
-            if (heap.animMode == 3 && myIdx == 0) DrawCircleV(drawPos, 35, RED); // Root sắp xóa báo Đỏ
+            if (heap.animMode == 3 && myIdx == 0) DrawCircleV(drawPos, 35, RED);
             else if (heap.animMode == 5 && myIdx == heap.moveIdxA) DrawCircleV(drawPos, 35, RED);
             else if (myIdx == heap.curIdx) DrawCircleV(drawPos, 35, ORANGE);
             else if (myIdx == heap.targetIdx) DrawCircleV(drawPos, 35, RED);
@@ -325,23 +400,25 @@ void Heap::drawHeap()
 void runHeap(AppState &currentState)
 {
     static char valBuffer[16] = "10";
-    // static char indexBuffer[16] = "7";
-    // static char valSearchBuffer[16] = "7";
-    // static char inputBuffer[256] = "1 2 3 4 5";
-    // static char updateValBuffer[16] = "5";
+    static char inputBuffer[256] = "1 2 3 4 5";
 
     static bool editModeValue = false;
-    // static bool editModeIndex = false;
-    // static bool editMode = false;
-    // static bool valSearchEditMode = false;
-    // static bool updateValEditMode = false;
+    static bool editMode = false;
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
     myHeap.drawHeap();
 
-    float opsX = 20, opsY = 250;
-    DrawRectangleLinesEx((Rectangle){ opsX, opsY, 330, 450 }, 1, BLACK);
-    DrawUpdatePanel(opsX + 20, opsY + 25, myHeap, valBuffer, editModeValue);
-    // DrawPopPanel()
+    float X = 60, Y = 150;
+    
+    DrawForwardButton(800, 800, myHeap);
+
+    bool isBusy = (myHeap.animMode != 0 || myHeap.isMoving);
+    if (isBusy) GuiSetState(STATE_DISABLED);
+
+    DrawToggle(X, Y, myHeap);
+    DrawInitPanel(X, Y + 125, myHeap, inputBuffer, editMode);
+    DrawUpdatePanel(X, Y + 425, myHeap, valBuffer, editModeValue);
+    
+    if (!isBusy) GuiSetState(STATE_NORMAL);
 }
