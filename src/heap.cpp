@@ -41,7 +41,7 @@ void Heap::push(int value)
 
 void Heap::insertNodeOnly(int value)
 {
-    float x = 950, y = 100, delta_x = 512, delta_y = 128;
+    float x = 1000, y = 100, delta_x = 512, delta_y = 128;
     int level = 0;
     Node* parent = nullptr;
 
@@ -63,6 +63,22 @@ void Heap::insertNodeOnly(int value)
 
     arr.push_back(child);
     sz++;
+}
+
+void Heap::removeLastNodeOnly()
+{
+    std::swap(arr[0]->value, arr[sz - 1]->value);
+    Node* lastNode = arr[sz - 1];
+    Node* p = lastNode->parent;
+    if (p != nullptr)
+    {
+        if (p->left == lastNode) p->left = nullptr;
+        else if (p->right == lastNode) p->right = nullptr;
+    } else head = nullptr;
+
+    delete lastNode;
+    arr.pop_back();
+    sz--;
 }
 
 void Heap::pop()
@@ -87,22 +103,6 @@ void Heap::pop()
     }
 }
 
-void Heap::removeLastNodeOnly()
-{
-    std::swap(arr[0]->value, arr[sz - 1]->value);
-    Node* lastNode = arr[sz - 1];
-    Node* p = lastNode->parent;
-    if (p != nullptr)
-    {
-        if (p->left == lastNode) p->left = nullptr;
-        else if (p->right == lastNode) p->right = nullptr;
-    } else head = nullptr;
-
-    delete lastNode;
-    arr.pop_back();
-    sz--;
-}
-
 int Heap::top()
 {
     if (sz == 0) return -1;
@@ -116,12 +116,34 @@ void Heap::clear()
     arr.clear();
 }
 
+static void DrawForwardButton(float x, float y, Heap& heap)
+{
+    GuiSetState(STATE_NORMAL);
+    if (heap.mode != 1) GuiSetState(STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y, 100, 30 }, "Forward >")) 
+    {
+        heap.animSpeed = 0.0f; 
+    }
+    GuiSetState(STATE_NORMAL);
+}
+
+static void DrawToggle(float x, float y, Heap& heap)
+{
+    int oldMode = heap.mode;
+
+    makeGuiLabel(x + 45, y - 30, "Animation Mode:");
+    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &heap.mode);
+
+    if (heap.mode != oldMode)
+    {
+        if (heap.mode == 1) heap.animSpeed = 999999.0f; 
+        else heap.animSpeed = 0.6f;
+    }
+}
+
 static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& editMode)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
-    bool isBusy = (heap.animMode != 0 || heap.isMoving);
-
-    if (isBusy) GuiSetState(STATE_DISABLED);
 
     makeGuiLabel(x, y, "Initialize Heap");
     
@@ -155,16 +177,11 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
     }
 
     if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 16, editMode)) editMode = !editMode;
-
-    if (!isBusy) GuiSetState(STATE_NORMAL);
 }
 
 static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 250 }, 1, BLACK);
-    bool isBusy = (heap.animMode != 0 || heap.isMoving);
-
-    if (isBusy) GuiSetState(STATE_DISABLED);
 
     makeGuiLabel(x, y, "Insert a node");
     makeGuiLabel(x, y + 35, "Value:");
@@ -186,7 +203,6 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
 
     if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
 
-    if (!isBusy) GuiSetState(STATE_NORMAL);
 }
 
 void Heap::startPushAnimation(int value)
@@ -196,6 +212,9 @@ void Heap::startPushAnimation(int value)
     curIdx = sz - 1;
     targetIdx = (curIdx > 0) ? (curIdx - 1) / 2 : -1;
     animTimer = 0.0f;
+
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.6f;
 }
 
 void Heap::startPopAnimation()
@@ -212,6 +231,9 @@ void Heap::startPopAnimation()
     curIdx = 0; 
     targetIdx = -1; 
     animTimer = 0.0f;
+
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.6f;
 }
 
 void Heap::updateAnimation() 
@@ -279,11 +301,13 @@ void Heap::updateAnimation()
     }
 
     animTimer += GetFrameTime();
-    float safeSpeed = (animSpeed > 0.0f) ? animSpeed : 0.6f;
+    float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.6f;
 
     if (animTimer >= safeSpeed) 
     {
         animTimer = 0.0f;
+
+        if (mode == 1) animSpeed = 999999.0f; 
 
         if (animMode == 3) animMode = 4;
         else if (animMode == 4)
@@ -336,6 +360,7 @@ static void draw(Heap::Node* cur, Heap& heap)
         if (!isMovingEdge) DrawLineEx({cur->x, cur->y}, {cur->left->x, cur->left->y}, 3.0f, BLACK);
         draw(cur->left, heap);
     }
+    
     if (cur->right != nullptr)
     {
         bool isMovingEdge = (heap.animMode == 5 && cur->right == heap.arr[heap.sz - 1]);
@@ -384,8 +409,16 @@ void runHeap(AppState &currentState)
 
     myHeap.drawHeap();
 
-    float opsX = 20, opsY = 150;
+    float X = 60, Y = 150;
+    
+    DrawForwardButton(800, 800, myHeap);
 
-    DrawInitPanel(opsX + 20, opsY + 25, myHeap, inputBuffer, editMode);
-    DrawUpdatePanel(opsX + 20, opsY + 325, myHeap, valBuffer, editModeValue);
+    bool isBusy = (myHeap.animMode != 0 || myHeap.isMoving);
+    if (isBusy) GuiSetState(STATE_DISABLED);
+
+    DrawToggle(X, Y, myHeap);
+    DrawInitPanel(X, Y + 125, myHeap, inputBuffer, editMode);
+    DrawUpdatePanel(X, Y + 425, myHeap, valBuffer, editModeValue);
+    
+    if (!isBusy) GuiSetState(STATE_NORMAL);
 }

@@ -35,21 +35,23 @@ struct Heap
     void removeLastNodeOnly();
     int top();
 
-    int animMode = 0;      // 0: Idle, 1: Heapify Up (Push), 2: Heapify Down (Pop)
-    int curIdx = -1;       // Chỉ số đang xét
-    int targetIdx = -1;    // Chỉ số cha/con để so sánh
+    int animMode = 0;
+    int curIdx = -1;
+    int targetIdx = -1;
     float animTimer = 0.0f;
-    float animSpeed = 0.8f; // Thời gian chờ mỗi bước (giây)
+    float animSpeed = 0.8f;
 
-    bool isMoving = false;    // Trạng thái đang di chuyển tọa độ
-    int moveIdxA = -1, moveIdxB = -1; // Hai chỉ số mảng đang đổi chỗ
-    Vector2 startPosA, startPosB;    // Vị trí bắt đầu của 2 node
+    bool isMoving = false;
+    int moveIdxA = -1, moveIdxB = -1;
+    Vector2 startPosA, startPosB;
     float moveTimer = 0.0f;
-    float moveDuration = 0.4f;       // Tốc độ bay (0.4 giây là vừa đẹp)
+    float moveDuration = 0.4f;
+
+    int mode = 0;
 
     void startPushAnimation(int value);
     void startPopAnimation();
-    void updateAnimation(); // Hàm xử lý logic chuyển động mỗi khung hình
+    void updateAnimation();
 };
 
 void runHeap(AppState &currentState);

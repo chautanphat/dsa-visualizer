@@ -359,16 +359,16 @@ void runLinkedList(AppState &currentState)
    
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-    myAppList.drawLinkedList(400, 250);
+    myAppList.drawLinkedList(430, 250);
     DrawInitPanel(600, 20, myAppList, inputBuffer, editMode);
-    float opsX = 20, opsY = 250;
+    float X = 60, Y = 250;
 
     if (myAppList.animMode == 0) GuiSetState(STATE_NORMAL);
 
-    DrawRectangleLinesEx((Rectangle){ opsX, opsY, 330, 450 }, 1, BLACK);
-    DrawAddPanel(opsX + 20, opsY + 25, myAppList, valBuffer, editModeValue);
-    DrawUpdatePanel(opsX + 20, opsY + 150, myAppList, indexBuffer, editModeIndex, updateValBuffer, updateValEditMode);
-    DrawSearchPanel(opsX + 20, opsY + 300, myAppList, valSearchBuffer, valSearchEditMode);
+    DrawRectangleLinesEx((Rectangle){ X - 20, Y, 330, 450 }, 1, BLACK);
+    DrawAddPanel(X, Y + 25, myAppList, valBuffer, editModeValue);
+    DrawUpdatePanel(X, Y + 150, myAppList, indexBuffer, editModeIndex, updateValBuffer, updateValEditMode);
+    DrawSearchPanel(X, Y + 300, myAppList, valSearchBuffer, valSearchEditMode);
     
     if (myAppList.animMode != 0) GuiSetState(STATE_DISABLED);
 }
