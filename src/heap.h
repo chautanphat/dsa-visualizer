@@ -31,7 +31,7 @@ struct Heap
 
     std::vector<Node*> arr;
     int sz;
-    Node* head;
+    Node* root;
 
     Heap();
     ~Heap();

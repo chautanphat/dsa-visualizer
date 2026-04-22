@@ -30,7 +30,7 @@ static Heap myHeap;
 
 Heap::Node::Node(int val, float _x, float _y, float _delta_x, Node* _parent) : value(val), x(_x), y(_y), delta_x(_delta_x), parent(_parent), left(nullptr), right(nullptr) {}
 
-Heap::Heap() : arr(31, nullptr), sz(0), head(nullptr) {}
+Heap::Heap() : arr(31, nullptr), sz(0), root(nullptr) {}
 Heap::~Heap() { clear(); }
 
 void Heap::push(int value)
@@ -68,7 +68,7 @@ void Heap::insertNodeOnly(int value)
     }
 
     if (p) (sz % 2 ? p->left : p->right) = arr[sz];
-    else head = arr[0];
+    else root = arr[0];
 
     sz++;
 }
@@ -82,7 +82,7 @@ void Heap::removeLastNodeOnly()
     {
         if (p->left == lastNode) p->left = nullptr;
         else if (p->right == lastNode) p->right = nullptr;
-    } else head = nullptr;
+    } else root = nullptr;
     sz--;
 }
 
@@ -111,7 +111,7 @@ void Heap::pop()
 int Heap::top()
 {
     if (sz == 0) return -1;
-    return head->value;
+    return root->value;
 }
 
 void Heap::clear()
@@ -123,7 +123,7 @@ void Heap::clear()
             delete arr[i];
             arr[i] = nullptr;
         }
-    head = nullptr;
+    root = nullptr;
 }
 
 static void DrawForwardButton(float x, float y, Heap& heap)
@@ -410,7 +410,7 @@ void Heap::restoreSnapshot(const Snapshot& snapshot)
         arr[i]->right = (2 * i + 2 < sz) ? arr[2 * i + 2] : nullptr;
         if (i > 0) arr[i]->parent = arr[(i - 1) / 2];
     }
-    head = (sz > 0) ? arr[0] : nullptr;
+    root = (sz > 0) ? arr[0] : nullptr;
 }
 
 static void draw(Heap::Node* cur, Heap& heap)
@@ -455,9 +455,9 @@ static void draw(Heap::Node* cur, Heap& heap)
 
 void Heap::drawHeap()
 {
-    if (!head) return;
+    if (!root) return;
     updateAnimation(); 
-    draw(head, *this);
+    draw(root, *this);
 }
 
 void runHeap(AppState &currentState)
