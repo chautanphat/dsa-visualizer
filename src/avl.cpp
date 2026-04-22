@@ -1,4 +1,4 @@
-#include "heap.h"
+#include "avl.h"
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
@@ -26,14 +26,23 @@ const float delta_y = 128.0f;
 //     "       else: break"                        // 8 (Dừng lại)
 // };
 
-static Heap myHeap;
+static AVL myHeap;
 
-Heap::Node::Node(int val, float _x, float _y, float _delta_x, Node* _parent) : value(val), x(_x), y(_y), delta_x(_delta_x), parent(_parent), left(nullptr), right(nullptr) {}
+static void deleteTree(AVL::Node* &cur)
+{
+    if (cur == nullptr) return;
+    deleteTree(cur->left);
+    deleteTree(cur->right);
+    delete cur;
+    cur = nullptr;
+}
 
-Heap::Heap() : arr(31, nullptr), sz(0), head(nullptr) {}
-Heap::~Heap() { clear(); }
+AVL ::Node::Node(int val, float _x, float _y, int _level, float _delta_x, Node* _parent) : value(val), x(_x), y(_y), level(_level), delta_x(_delta_x), parent(_parent), left(nullptr), right(nullptr) {}
 
-void Heap::push(int value)
+AVL::AVL() : arr(31, nullptr), sz(0), head(nullptr) {}
+AVL::~AVL() { clear(); }
+
+void AVL::push(int value)
 {
     insertNodeOnly(value);
     
@@ -49,21 +58,22 @@ void Heap::push(int value)
     }
 }
 
-void Heap::insertNodeOnly(int value)
+void AVL::insertNodeOnly(int value)
 {
     if (sz >= 31) return;
     Node* p = (sz > 0) ? arr[(sz - 1) / 2] : nullptr;
     float dx = p ? p->delta_x : delta_x;
     float x  = p ? p->x + (sz % 2 ? -1 : 1) * dx : startX;
     float y  = p ? p->y + delta_y : startY;
+    int lvl  = p ? p->level + 1 : 0;
 
-    if (!arr[sz]) arr[sz] = new Node(value, x, y, dx / 2, p);
+    if (!arr[sz]) arr[sz] = new Node(value, x, y, lvl, dx / 2, p);
     else
     {
         Node* n = arr[sz];
         n->value = value;
         n->x = n->vX = x; n->y = n->vY = y;
-        n->delta_x = dx / 2; n->parent = p;
+        n->level = lvl; n->delta_x = dx / 2; n->parent = p;
         n->left = n->right = nullptr;
     }
 
@@ -73,7 +83,7 @@ void Heap::insertNodeOnly(int value)
     sz++;
 }
 
-void Heap::removeLastNodeOnly()
+void AVL::removeLastNodeOnly()
 {
     std::swap(arr[0]->value, arr[sz - 1]->value);
     Node* lastNode = arr[sz - 1];
@@ -86,7 +96,7 @@ void Heap::removeLastNodeOnly()
     sz--;
 }
 
-void Heap::pop()
+void AVL::pop()
 {
     if (sz == 0) return;
 
@@ -108,25 +118,21 @@ void Heap::pop()
     }
 }
 
-int Heap::top()
+int AVL::top()
 {
     if (sz == 0) return -1;
     return head->value;
 }
 
-void Heap::clear()
+void AVL::clear()
 {
     sz = 0;
-    for (int i = 0; i < 31; i++) 
-        if (arr[i]) 
-        {
-            delete arr[i];
-            arr[i] = nullptr;
-        }
+    deleteTree(head);
+    arr.assign(31, nullptr);
     head = nullptr;
 }
 
-static void DrawForwardButton(float x, float y, Heap& heap)
+static void DrawForwardButton(float x, float y, AVL& heap)
 {
     GuiSetState(STATE_NORMAL);
     if (heap.mode != 1 || heap.animMode == 0) GuiSetState(STATE_DISABLED);
@@ -137,12 +143,12 @@ static void DrawForwardButton(float x, float y, Heap& heap)
     GuiSetState(STATE_NORMAL);
 }
 
-static void DrawBackwardButton(float x, float y, Heap& heap)
+static void DrawBackwardButton(float x, float y, AVL& heap)
 {
     if (heap.mode != 1 || heap.history.empty()) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
     {
-        Heap::Snapshot lastState = heap.history.back();
+        AVL::Snapshot lastState = heap.history.back();
         heap.history.pop_back();
         heap.restoreSnapshot(lastState);
         
@@ -151,7 +157,7 @@ static void DrawBackwardButton(float x, float y, Heap& heap)
     GuiSetState(STATE_NORMAL);
 }
 
-static void DrawToggle(float x, float y, Heap& heap)
+static void DrawToggle(float x, float y, AVL& heap)
 {
     int oldMode = heap.mode;
 
@@ -165,7 +171,7 @@ static void DrawToggle(float x, float y, Heap& heap)
     }
 }
 
-static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& editMode)
+static void DrawInitPanel(float x, float y, AVL& heap, char* inputBuf, bool& editMode)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
 
@@ -203,7 +209,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
     if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
 }
 
-static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
+static void DrawUpdatePanel(float x, float y, AVL& heap, char* valBuf, bool& editModeVal)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 250 }, 1, BLACK);
 
@@ -232,7 +238,7 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
     if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
 }
 
-void Heap::startPushAnimation(int value)
+void AVL::startPushAnimation(int value)
 {
     history.clear();
     insertNodeOnly(value);
@@ -246,7 +252,7 @@ void Heap::startPushAnimation(int value)
     else animSpeed = 0.6f;
 }
 
-void Heap::startPopAnimation()
+void AVL::startPopAnimation()
 {
     history.clear();
     if (sz <= 0 || animMode != 0 || isMoving) return;
@@ -266,7 +272,7 @@ void Heap::startPopAnimation()
     else animSpeed = 0.6f;
 }
 
-void Heap::updateAnimation() 
+void AVL::updateAnimation() 
 {
     if (animMode == 0) return;
 
@@ -382,7 +388,7 @@ void Heap::updateAnimation()
     }
 }
 
-void Heap::captureSnapshot()
+void AVL::captureSnapshot()
 {
     Snapshot snapshot;
     snapshot.sz = sz;
@@ -395,7 +401,7 @@ void Heap::captureSnapshot()
     history.push_back(snapshot);
 }
 
-void Heap::restoreSnapshot(const Snapshot& snapshot)
+void AVL::restoreSnapshot(const Snapshot& snapshot)
 {
     sz = snapshot.sz;
     animMode = snapshot.animMode;
@@ -413,7 +419,7 @@ void Heap::restoreSnapshot(const Snapshot& snapshot)
     head = (sz > 0) ? arr[0] : nullptr;
 }
 
-static void draw(Heap::Node* cur, Heap& heap)
+static void draw(AVL::Node* cur, AVL& heap)
 {
     if (!cur) return;
     
@@ -453,14 +459,14 @@ static void draw(Heap::Node* cur, Heap& heap)
     }
 }
 
-void Heap::drawHeap()
+void AVL::drawHeap()
 {
     if (!head) return;
     updateAnimation(); 
     draw(head, *this);
 }
 
-void runHeap(AppState &currentState)
+void runAVL(AppState &currentState)
 {
     static char valBuffer[16] = "10";
     static char inputBuffer[2048] = "1 2 3 4 5";

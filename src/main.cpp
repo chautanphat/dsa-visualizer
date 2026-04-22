@@ -5,14 +5,14 @@
 #include "menu.h"
 #include "linkedlist.h"
 #include "heap.h"
+#include "avl.h"
 #include <ctime>
 
 const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
 
-static AppState currentState = HEAP;
-
+static AppState currentState = AVLTREE;
 int main()
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
@@ -31,12 +31,14 @@ int main()
                 case MENU:
                     DrawMenu(currentState);
                     break;
-
                 case LINKED_LIST:
                     runLinkedList(currentState);
                     break;
                 case HEAP:
                     runHeap(currentState);
+                    break;
+                case AVLTREE:
+                    runAVL(currentState);
                     break;
             }
             if (currentState != MENU)

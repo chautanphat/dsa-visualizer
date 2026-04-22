@@ -278,7 +278,7 @@ static void DrawInitPanel(float x, float y, LinkedList& list, char* inputBuf, bo
 
 static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool& editModeVal)
 {
-    makeGuiLabel(x, y, "ADD A NODE");
+    makeGuiLabel(x, y, "Add a node");
     makeGuiLabel(x, y + 35, "Value:");
 
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal))
@@ -302,7 +302,7 @@ static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool&
 
 static void DrawUpdatePanel(float x, float y, LinkedList& list, char* idxBuf, bool& editModeIdx, char* valBuf, bool& editModeVal)
 {
-    makeGuiLabel(x, y, "UPDATE ACTIONS");
+    makeGuiLabel(x, y, "Update actions");
     makeGuiLabel(x, y + 35, "Index:");
     makeGuiLabel(x + 160, y + 35, "Value:");
     
@@ -329,7 +329,7 @@ static void DrawUpdatePanel(float x, float y, LinkedList& list, char* idxBuf, bo
 
 static void DrawSearchPanel(float x, float y, LinkedList& list, char* searchBuf, bool& editModeSearch)
 {
-    makeGuiLabel(x, y, "SEARCH VALUE");
+    makeGuiLabel(x, y, "Search value");
     makeGuiLabel(x, y + 35, "Value:");
     
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, searchBuf, 16, editModeSearch)) {
@@ -360,15 +360,14 @@ void runLinkedList(AppState &currentState)
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
     myAppList.drawLinkedList(430, 250);
-    DrawInitPanel(600, 20, myAppList, inputBuffer, editMode);
     float X = 60, Y = 250;
 
     if (myAppList.animMode == 0) GuiSetState(STATE_NORMAL);
+    else GuiSetState(STATE_DISABLED);
 
+    DrawInitPanel(600, 20, myAppList, inputBuffer, editMode);
     DrawRectangleLinesEx((Rectangle){ X - 20, Y, 330, 450 }, 1, BLACK);
     DrawAddPanel(X, Y + 25, myAppList, valBuffer, editModeValue);
     DrawUpdatePanel(X, Y + 150, myAppList, indexBuffer, editModeIndex, updateValBuffer, updateValEditMode);
     DrawSearchPanel(X, Y + 300, myAppList, valSearchBuffer, valSearchEditMode);
-    
-    if (myAppList.animMode != 0) GuiSetState(STATE_DISABLED);
 }

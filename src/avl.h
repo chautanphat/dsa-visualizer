@@ -1,23 +1,24 @@
-#ifndef HEAP_H
-#define HEAP_H
+#ifndef AVL_H
+#define AVL_H
 
 #include "raylib.h"
 #include "common.h"
 #include "code_viewer.h"
 #include <vector>
 
-struct Heap
+struct AVL
 {
     struct Node
     {
         int value;
         float x, y;
         float vX, vY;
+        int level;
         float delta_x;
         Node* parent;
         Node* left;
         Node* right;
-        Node(int val, float _x, float _y, float delta_x, Node* _parent);
+        Node(int val, float _x, float _y, int _level, float delta_x, Node* _parent);
     };
 
     struct Snapshot
@@ -33,8 +34,8 @@ struct Heap
     int sz;
     Node* head;
 
-    Heap();
-    ~Heap();
+    AVL();
+    ~AVL();
 
     void clear();
     void drawHeap();
@@ -69,6 +70,6 @@ struct Heap
     // CodeViewer codeUI;
 };
 
-void runHeap(AppState &currentState);
+void runAVL(AppState &currentState);
 
 #endif
