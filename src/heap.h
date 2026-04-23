@@ -54,7 +54,7 @@ struct Heap
     int moveIdxA = -1, moveIdxB = -1;
     Vector2 startPosA, startPosB;
     float moveTimer = 0.0f;
-    float moveDuration = 0.4f;
+    float moveDuration = 0.8f;
 
     int mode = 0;
 
