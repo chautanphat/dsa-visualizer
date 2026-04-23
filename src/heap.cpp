@@ -314,6 +314,7 @@ void Heap::updateAnimation()
                     arr[moveIdxA]->vX = arr[moveIdxA]->x; arr[moveIdxA]->vY = arr[moveIdxA]->y;
                     arr[moveIdxB]->vX = arr[moveIdxB]->x; arr[moveIdxB]->vY = arr[moveIdxB]->y;
                     curIdx = moveIdxB;
+                    targetIdx = -1;
                 } else if (moveIdxA != -1)
                 {
                     arr[moveIdxA]->vX = arr[moveIdxA]->x; 
@@ -321,15 +322,14 @@ void Heap::updateAnimation()
                 }
                 
                 isMoving = false;
-                moveTimer = 0.0f;; 
-                targetIdx = -1;
+                moveTimer = 0.0f;
             }
         } 
         else
         {
+            float easeOutT = 1.0f - (1.0f - t) * (1.0f - t);
             if (moveIdxA != -1 && moveIdxB != -1) 
             {
-                float easeOutT = 1.0f - (1.0f - t) * (1.0f - t);
                 arr[moveIdxA]->vX = arr[moveIdxA]->x + (arr[moveIdxB]->x - arr[moveIdxA]->x) * easeOutT;
                 arr[moveIdxA]->vY = arr[moveIdxA]->y + (arr[moveIdxB]->y - arr[moveIdxA]->y) * easeOutT;
                 arr[moveIdxB]->vX = arr[moveIdxB]->x + (arr[moveIdxA]->x - arr[moveIdxB]->x) * easeOutT;
@@ -337,7 +337,6 @@ void Heap::updateAnimation()
             }
             else
             {
-                float easeOutT = 1.0f - (1.0f - t) * (1.0f - t);
                 arr[moveIdxA]->vX += (arr[moveIdxA]->x - arr[moveIdxA]->vX) * easeOutT;
                 arr[moveIdxA]->vY += (arr[moveIdxA]->y - arr[moveIdxA]->vY) * easeOutT;
             }
