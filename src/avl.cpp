@@ -29,15 +29,6 @@ const float delta_y = 128.0f;
 
 static AVL myAVL;
 
-// static void deleteTree(AVL::Node* &cur)
-// {
-//     if (cur == nullptr) return;
-//     deleteTree(cur->left);
-//     deleteTree(cur->right);
-//     delete cur;
-//     cur = nullptr;
-// }
-
 AVL ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), bf(0), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
 
 AVL::AVL() : sz(0), root(nullptr) { arr.clear(); }
@@ -52,22 +43,6 @@ void AVL::clear()
     history.clear(); 
     root = nullptr;
 }
-
-// void AVL::push(int value)
-// {
-//     insertNodeOnly(value);
-    
-//     int cur = sz - 1;
-//     while (cur > 0)
-//     {
-//         int parentId = (cur-1)/2;
-//         if (arr[cur]->value > arr[parentId]->value)
-//         {
-//             std::swap(arr[cur]->value, arr[parentId]->value);
-//             cur = parentId;
-//         } else break;
-//     }
-// }
 
 AVL::Node* AVL::insertLogic(Node* node, int val, Node* p)
 {
@@ -136,41 +111,6 @@ void AVL::insert(int value)
         }
     }
 }
-
-// void AVL::removeLastNodeOnly()
-// {
-//     std::swap(arr[0]->value, arr[sz - 1]->value);
-//     Node* lastNode = arr[sz - 1];
-//     Node* p = lastNode->parent;
-//     if (p != nullptr)
-//     {
-//         if (p->left == lastNode) p->left = nullptr;
-//         else if (p->right == lastNode) p->right = nullptr;
-//     } else head = nullptr;
-//     sz--;
-// }
-
-// void AVL::pop()
-// {
-//     if (sz == 0) return;
-
-//     removeLastNodeOnly();
-
-//     if (sz <= 1) return;
-
-//     int cur = 0;
-//     while (cur < sz)
-//     {
-//         int leftId = cur*2 + 1;
-//         int rightId = cur*2 + 2;
-//         int largestId = cur;
-//         if (leftId < sz && arr[leftId]->value > arr[largestId]->value) largestId = leftId;
-//         if (rightId < sz && arr[rightId]->value > arr[largestId]->value) largestId = rightId;
-//         if (largestId == cur) break;
-//         std::swap(arr[cur]->value, arr[largestId]->value);
-//         cur = largestId;
-//     }
-// }
 
 int AVL::getHeight(Node* node)
 {
@@ -279,7 +219,7 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
 
-    makeGuiLabel(x, y, "Initialize Heap");
+    makeGuiLabel(x, y, "Initialize AVL Tree");
     
     if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
     {
@@ -301,13 +241,10 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
 
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
     { 
-        // std::istringstream iss(inputBuf);
-        // int value;
-        // avl.clear();
-        // while (iss >> value && avl.sz < 31)
-        // {
-        //     avl.push(value);
-        // }
+        std::istringstream iss(inputBuf);
+        int value;
+        avl.clear();
+        while (iss >> value && avl.sz < 31) avl.insert(value);
     }
 
     if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
@@ -315,9 +252,9 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
 
 static void DrawUpdatePanel(float x, float y, AVL& avl, char* valBuf, bool& editModeVal)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 250 }, 1, BLACK);
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 280 }, 1, BLACK);
 
-    makeGuiLabel(x, y, "Insert a node");
+    makeGuiLabel(x, y, "Operations");
     makeGuiLabel(x, y + 35, "Value:");
     
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
@@ -337,9 +274,10 @@ static void DrawUpdatePanel(float x, float y, AVL& avl, char* valBuf, bool& edit
     GuiSetState(curState);
 
     if (avl.sz == 0) GuiSetState(STATE_DISABLED);
-    // if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Pop")) avl.startPopAnimation();
+    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"));
 
-    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) avl.clear();
+    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Search"));
+    if (GuiButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) avl.clear();
 }
 
 void AVL::startInsertAnimation(int value)
@@ -367,26 +305,6 @@ void AVL::startInsertAnimation(int value)
     if (mode == 1) animSpeed = 999999.0f;
     else animSpeed = 0.6f;
 }
-
-// void AVL::startPopAnimation()
-// {
-//     history.clear();
-//     if (sz <= 0 || animMode != 0 || isMoving) return;
-
-//     if (sz == 1)
-//     { 
-//         pop();
-//         return; 
-//     }
-
-//     animMode = 3;
-//     curIdx = 0; 
-//     targetIdx = -1; 
-//     animTimer = 0.0f;
-
-//     if (mode == 1) animSpeed = 999999.0f;
-//     else animSpeed = 0.6f;
-// }
 
 void AVL::updateAnimation()
 {
