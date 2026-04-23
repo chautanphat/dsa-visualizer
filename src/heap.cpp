@@ -41,12 +41,20 @@ void Heap::insertNodeOnly(int value)
     float x  = p ? p->x + (sz % 2 ? -1 : 1) * dx : startX;
     float y  = p ? p->y + delta_y : startY;
 
-    if (!arr[sz]) arr[sz] = new Node(value, x, y, dx / 2, p);
-    else
+    float spawnX = p ? p->x : x; 
+    float spawnY = p ? p->y : y;
+
+    if (!arr[sz])
+    {
+        arr[sz] = new Node(value, x, y, dx / 2, p);
+        arr[sz]->vX = spawnX; 
+        arr[sz]->vY = spawnY;
+    } else
     {
         Node* n = arr[sz];
         n->value = value;
-        n->x = n->vX = x; n->y = n->vY = y;
+        n->x = x; n->y = y;
+        n->vX = spawnX; n->vY = spawnY;
         n->delta_x = dx / 2; n->parent = p;
         n->left = n->right = nullptr;
     }
@@ -237,6 +245,11 @@ void Heap::startPushAnimation(int value)
     history.clear();
     insertNodeOnly(value);
 
+    isMoving = true;
+    moveTimer = 0.0f;
+    moveIdxA = sz - 1; 
+    moveIdxB = -1;
+
     animMode = 1;
     curIdx = sz - 1;
     targetIdx = (curIdx > 0) ? (curIdx - 1) / 2 : -1;
@@ -295,24 +308,39 @@ void Heap::updateAnimation()
             } 
             else 
             {
-                std::swap(arr[moveIdxA]->value, arr[moveIdxB]->value);
+                if (moveIdxA != -1 && moveIdxB != -1) 
+                {
+                    std::swap(arr[moveIdxA]->value, arr[moveIdxB]->value);
+                    arr[moveIdxA]->vX = arr[moveIdxA]->x; arr[moveIdxA]->vY = arr[moveIdxA]->y;
+                    arr[moveIdxB]->vX = arr[moveIdxB]->x; arr[moveIdxB]->vY = arr[moveIdxB]->y;
+                    curIdx = moveIdxB;
+                } else if (moveIdxA != -1)
+                {
+                    arr[moveIdxA]->vX = arr[moveIdxA]->x; 
+                    arr[moveIdxA]->vY = arr[moveIdxA]->y;
+                }
                 
-                arr[moveIdxA]->vX = arr[moveIdxA]->x; arr[moveIdxA]->vY = arr[moveIdxA]->y;
-                arr[moveIdxB]->vX = arr[moveIdxB]->x; arr[moveIdxB]->vY = arr[moveIdxB]->y;
-
                 isMoving = false;
-                moveTimer = 0.0f;
-                curIdx = moveIdxB; 
+                moveTimer = 0.0f;; 
                 targetIdx = -1;
             }
         } 
-        else 
+        else
         {
-            arr[moveIdxA]->vX = arr[moveIdxA]->x + (arr[moveIdxB]->x - arr[moveIdxA]->x) * t;
-            arr[moveIdxA]->vY = arr[moveIdxA]->y + (arr[moveIdxB]->y - arr[moveIdxA]->y) * t;
-            
-            arr[moveIdxB]->vX = arr[moveIdxB]->x + (arr[moveIdxA]->x - arr[moveIdxB]->x) * t;
-            arr[moveIdxB]->vY = arr[moveIdxB]->y + (arr[moveIdxA]->y - arr[moveIdxB]->y) * t;
+            if (moveIdxA != -1 && moveIdxB != -1) 
+            {
+                float easeOutT = 1.0f - (1.0f - t) * (1.0f - t);
+                arr[moveIdxA]->vX = arr[moveIdxA]->x + (arr[moveIdxB]->x - arr[moveIdxA]->x) * easeOutT;
+                arr[moveIdxA]->vY = arr[moveIdxA]->y + (arr[moveIdxB]->y - arr[moveIdxA]->y) * easeOutT;
+                arr[moveIdxB]->vX = arr[moveIdxB]->x + (arr[moveIdxA]->x - arr[moveIdxB]->x) * easeOutT;
+                arr[moveIdxB]->vY = arr[moveIdxB]->y + (arr[moveIdxA]->y - arr[moveIdxB]->y) * easeOutT;
+            }
+            else
+            {
+                float easeOutT = 1.0f - (1.0f - t) * (1.0f - t);
+                arr[moveIdxA]->vX += (arr[moveIdxA]->x - arr[moveIdxA]->vX) * easeOutT;
+                arr[moveIdxA]->vY += (arr[moveIdxA]->y - arr[moveIdxA]->vY) * easeOutT;
+            }
         }
         return;
     }
@@ -418,15 +446,27 @@ static void draw(Heap::Node* cur, Heap& heap)
     
     if (cur->left != nullptr)
     {
-        bool isMovingEdge = (heap.sz > 0 && heap.animMode == 5 && cur->left == heap.arr[heap.sz - 1]);
-        if (!isMovingEdge) DrawLineEx({cur->x, cur->y}, {cur->left->x, cur->left->y}, 3.0f, BLACK);
+        bool isDeletingEdge = (heap.sz > 0 && heap.animMode == 5 && cur->left == heap.arr[heap.sz - 1]);
+        if (!isDeletingEdge) 
+        {
+            bool isSpawning = (heap.isMoving && heap.moveIdxB == -1 && cur->left == heap.arr[heap.moveIdxA]);
+            float endX = isSpawning ? cur->left->vX : cur->left->x;
+            float endY = isSpawning ? cur->left->vY : cur->left->y;
+            DrawLineEx({cur->x, cur->y}, {endX, endY}, 3.0f, BLACK);
+        }
         draw(cur->left, heap);
     }
     
     if (cur->right != nullptr)
     {
-        bool isMovingEdge = (heap.sz > 0 && heap.animMode == 5 && cur->right == heap.arr[heap.sz - 1]);
-        if (!isMovingEdge) DrawLineEx({cur->x, cur->y}, {cur->right->x, cur->right->y}, 3.0f, BLACK);
+        bool isDeletingEdge = (heap.sz > 0 && heap.animMode == 5 && cur->right == heap.arr[heap.sz - 1]);
+        if (!isDeletingEdge) 
+        {
+            bool isSpawning = (heap.isMoving && heap.moveIdxB == -1 && cur->right == heap.arr[heap.moveIdxA]);
+            float endX = isSpawning ? cur->right->vX : cur->right->x;
+            float endY = isSpawning ? cur->right->vY : cur->right->y;
+            DrawLineEx({cur->x, cur->y}, {endX, endY}, 3.0f, BLACK);
+        }
         draw(cur->right, heap);
     }
 
