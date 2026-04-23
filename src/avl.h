@@ -10,64 +10,65 @@ struct AVL
 {
     struct Node
     {
-        int value;
+        int value, height, bf, id;
         float x, y;
         float vX, vY;
-        int level;
-        float delta_x;
-        Node* parent;
-        Node* left;
-        Node* right;
-        Node(int val, float _x, float _y, int _level, float delta_x, Node* _parent);
+        Node *parent, *left, *right;
+        Node(int val, float _x, float _y, int _id, Node* _parent);
     };
 
     struct Snapshot
     {
-        std::vector<int> values;
-        int sz;
+        struct NodeState
+        {
+            int id, val, h;
+            int pId, lId, rId;
+            float vx, vy;
+        };
+
+        std::vector<NodeState> states;
+        int rootId;
         int animMode;
         int curIdx, targetIdx;
-        // int activeLine;
     };
 
     std::vector<Node*> arr;
-    int sz;
-    Node* head;
+    int sz, pendingValue;
+    Node* root;
 
     AVL();
     ~AVL();
 
     void clear();
-    void drawHeap();
-    void push(int value);
-    void insertNodeOnly(int value);
-    void pop();
-    void removeLastNodeOnly();
-    int top();
+    void drawTree();
+
+    Node* insertLogic(Node* node, int val, Node* p);
+    void insert(int value);
+    void remove(int value);
+    void search(int value);
+
+    int getHeight(Node* node);
+    int getBalance(Node* node);
+    Node* rightRotate(Node* y);
+    Node* leftRotate(Node* x);
+
+    void calculatePositions(Node* node, float currentX, float currentY, float hGap);
 
     int animMode = 0;
-    int curIdx = -1;
-    int targetIdx = -1;
-    float animTimer = 0.0f;
-    float animSpeed = 0.8f;
-
+    int curIdx = -1, targetIdx = -1;
+    float animTimer = 0.0f, animSpeed = 0.8f;
     bool isMoving = false;
-    int moveIdxA = -1, moveIdxB = -1;
-    Vector2 startPosA, startPosB;
-    float moveTimer = 0.0f;
-    float moveDuration = 0.4f;
+    float moveTimer = 0.0f, moveDuration = 0.8f;
 
     int mode = 0;
 
-    void startPushAnimation(int value);
-    void startPopAnimation();
+    void startInsertAnimation(int value); 
+    void startRemoveAnimation(int value);
     void updateAnimation();
     
     std::vector<Snapshot> history;
     void captureSnapshot();
     void restoreSnapshot(const Snapshot& sn);
-
-    // CodeViewer codeUI;
 };
 
 void runAVL(AppState &currentState);
