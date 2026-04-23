@@ -15,7 +15,7 @@ const float delta_x = 256.0f;
 const float delta_y = 128.0f;
 
 // std::vector<std::string> pushCode =
-// {
+// {gt
 //     "void Push(int val):",                   // 0
 //     "   arr.push_back(val)",                  // 1 (Thêm vào cuối)
 //     "   cur = sz - 1",                        // 2
@@ -46,12 +46,10 @@ void AVL::clear()
 
 AVL::Node* AVL::insertLogic(Node* node, int val, Node* p)
 {
-    // 1. Chèn như BST thông thường
     if (node == nullptr)
     {
         Node* newNode = new Node(val, 0.0f, 0.0f, sz, p); 
         
-        // Quản lý mảng an toàn tuyệt đối
         if (sz < (int)arr.size()) arr[sz] = newNode;
         else arr.push_back(newNode);
         
@@ -64,31 +62,25 @@ AVL::Node* AVL::insertLogic(Node* node, int val, Node* p)
     else if (val > node->value)
         node->right = insertLogic(node->right, val, node);
     else 
-        return node; // Trùng giá trị thì bỏ qua
+        return node;
 
-    // 2. Cập nhật chiều cao VÀ Hệ số cân bằng (CỰC KỲ QUAN TRỌNG)
     node->height = 1 + std::max(getHeight(node->left), getHeight(node->right));
-    node->bf = getHeight(node->left) - getHeight(node->right); // Đừng quên dòng này!
+    node->bf = getHeight(node->left) - getHeight(node->right);
 
     int balance = node->bf;
 
-    // 3. Kiểm tra 4 trường hợp mất cân bằng và Xoay
-    // Case 1: Left Left
     if (balance > 1 && val < node->left->value)
         return rightRotate(node);
 
-    // Case 2: Right Right
     if (balance < -1 && val > node->right->value)
         return leftRotate(node);
 
-    // Case 3: Left Right
     if (balance > 1 && val > node->left->value)
     {
         node->left = leftRotate(node->left);
         return rightRotate(node);
     }
 
-    // Case 4: Right Left
     if (balance < -1 && val < node->right->value)
     {
         node->right = rightRotate(node->right);
