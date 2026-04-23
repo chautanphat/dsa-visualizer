@@ -33,22 +33,6 @@ Heap::Node::Node(int val, float _x, float _y, float _delta_x, Node* _parent) : v
 Heap::Heap() : arr(31, nullptr), sz(0), root(nullptr) {}
 Heap::~Heap() { clear(); }
 
-void Heap::push(int value)
-{
-    insertNodeOnly(value);
-    
-    int cur = sz - 1;
-    while (cur > 0)
-    {
-        int parentId = (cur-1)/2;
-        if (arr[cur]->value > arr[parentId]->value)
-        {
-            std::swap(arr[cur]->value, arr[parentId]->value);
-            cur = parentId;
-        } else break;
-    }
-}
-
 void Heap::insertNodeOnly(int value)
 {
     if (sz >= 31) return;
@@ -71,6 +55,22 @@ void Heap::insertNodeOnly(int value)
     else root = arr[0];
 
     sz++;
+}
+
+void Heap::push(int value)
+{
+    insertNodeOnly(value);
+    
+    int cur = sz - 1;
+    while (cur > 0)
+    {
+        int parentId = (cur-1)/2;
+        if (arr[cur]->value > arr[parentId]->value)
+        {
+            std::swap(arr[cur]->value, arr[parentId]->value);
+            cur = parentId;
+        } else break;
+    }
 }
 
 void Heap::removeLastNodeOnly()
@@ -273,8 +273,7 @@ void Heap::updateAnimation()
     if (isMoving) 
     {
         moveTimer += GetFrameTime();
-        float safeDuration = (moveDuration > 0.0f) ? moveDuration : 0.4f; 
-        float t = moveTimer / safeDuration;
+        float t = moveTimer / moveDuration;
 
         if (t >= 1.0f) 
         {
