@@ -6,13 +6,14 @@
 #include "linkedlist.h"
 #include "heap.h"
 #include "avl.h"
+#include "aa.h"
 #include <ctime>
 
 const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
 
-static AppState currentState = AVLTREE;
+static AppState currentState = MENU;
 int main()
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
@@ -39,6 +40,9 @@ int main()
                     break;
                 case AVLTREE:
                     runAVL(currentState);
+                    break;
+                case AATREE:
+                    runAA(currentState);
                     break;
             }
             if (currentState != MENU)

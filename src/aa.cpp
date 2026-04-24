@@ -1,4 +1,4 @@
-#include "avl.h"
+#include "AA.h"
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
@@ -14,14 +14,14 @@ const float y_root = 100.0f;
 const float delta_x = 256.0f;
 const float delta_y = 128.0f;
 
-static AVL myAVL;
+static AA myAA;
 
-AVL ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), bf(0), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
+AA ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), level(1), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
 
-AVL::AVL() : sz(0), root(nullptr) { arr.clear(); }
-AVL::~AVL() { clear(); }
+AA::AA() : sz(0), root(nullptr) { arr.clear(); }
+AA::~AA() { clear(); }
 
-void AVL::clear()
+void AA::clear()
 {
     sz = 0;
     for (Node* node : arr)
@@ -31,119 +31,84 @@ void AVL::clear()
     root = nullptr;
 }
 
-AVL::Node* AVL::insertLogic(Node* node, int val, Node* p)
+AA::Node* AA::skew(Node* node) 
+{
+    if (node == nullptr || node->left == nullptr) return node;
+    
+    if (node->left->level == node->level) 
+    {
+        Node* leftChild = node->left;
+        node->left = leftChild->right;
+        if (leftChild->right != nullptr) leftChild->right->parent = node;
+        leftChild->parent = node->parent;
+        leftChild->right = node;
+        node->parent = leftChild;
+        return leftChild; 
+    }
+    
+    return node;
+}
+
+AA::Node* AA::split(Node* node) 
+{
+    if (node == nullptr || node->right == nullptr || node->right->right == nullptr) return node;
+    
+    if (node->right->right->level == node->level) 
+    {
+        Node* rightChild = node->right;
+        node->right = rightChild->left;
+        if (rightChild->left != nullptr) rightChild->left->parent = node;
+        rightChild->parent = node->parent;
+        rightChild->left = node;
+        node->parent = rightChild;
+        rightChild->level++;
+        return rightChild;
+    }
+    
+    return node;
+}
+
+void AA::decreaseLevel(Node* node) 
+{
+    if (node == nullptr) return;
+    int leftLevel = (node->left != nullptr) ? node->left->level : 0;
+    int rightLevel = (node->right != nullptr) ? node->right->level : 0;
+    int newLevel = std::min(leftLevel, rightLevel) + 1;
+    if (newLevel < node->level) 
+    {
+        node->level = newLevel;
+        if (node->right != nullptr && newLevel < node->right->level)
+            node->right->level = newLevel;
+    }
+}
+
+AA::Node* AA::insertLogic(Node* node, int val, Node* p)
 {
     if (node == nullptr)
     {
         Node* newNode = new Node(val, 0.0f, 0.0f, sz, p); 
-        
         if (sz < (int)arr.size()) arr[sz] = newNode;
         else arr.push_back(newNode);
-        
         sz++;
         return newNode;
     }
 
-    if (val < node->value)
-        node->left = insertLogic(node->left, val, node);
-    else if (val > node->value)
-        node->right = insertLogic(node->right, val, node);
-    else 
-        return node;
+    if (val < node->value) node->left = insertLogic(node->left, val, node);
+    else if (val > node->value) node->right = insertLogic(node->right, val, node);
+    else return node;
 
-    node->height = 1 + std::max(getHeight(node->left), getHeight(node->right));
-    node->bf = getHeight(node->left) - getHeight(node->right);
-
-    int balance = node->bf;
-
-    if (balance > 1 && val < node->left->value) return rightRotate(node);
-
-    if (balance < -1 && val > node->right->value) return leftRotate(node);
-
-    if (balance > 1 && val > node->left->value)
-    {
-        node->left = leftRotate(node->left);
-        return rightRotate(node);
-    }
-
-    if (balance < -1 && val < node->right->value)
-    {
-        node->right = rightRotate(node->right);
-        return leftRotate(node);
-    }
-
-    return node; 
+    return split(skew(node)); 
 }
 
-void AVL::insert(int value)
+void AA::insert(int value)
 {
     root = insertLogic(root, value, nullptr);
     calculatePositions(root, x_root, y_root, delta_x);
     for (Node* n : arr)
-    {
-        if (n != nullptr)
-        {
-            n->vX = n->x;
-            n->vY = n->y;
-        }
-    }
+        if (n != nullptr) n->vX = n->x, n->vY = n->y;
 }
 
-int AVL::getHeight(Node* node)
-{
-    if (node == nullptr) return 0;
-    return node->height;
-}
-
-int AVL::getBalance(Node* node)
-{
-    if (node == nullptr) return 0;
-    return getHeight(node->left) - getHeight(node->right);
-}
-
-AVL::Node* AVL::rightRotate(Node* y)
-{
-    Node* x = y->left;
-    Node* T2 = x->right;
-    Node* oldParent = y->parent;
-
-    x->right = y;
-    y->left = T2;
-
-    x->parent = oldParent;
-    y->parent = x;
-    if (T2 != nullptr) T2->parent = y;
-
-    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
-    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
-    y->bf = getHeight(y->left) - getHeight(y->right);
-    x->bf = getHeight(x->left) - getHeight(x->right);
-
-    return x;
-}
-
-AVL::Node* AVL::leftRotate(Node* x)
-{
-    Node* y = x->right;
-    Node* T2 = y->left;
-    Node* oldParent = x->parent;
-
-    y->left = x;
-    x->right = T2;
-
-    x->parent = y;
-    y->parent = oldParent;
-    if (T2 != nullptr) T2->parent = x;
-
-    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
-    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
-    x->bf = getHeight(x->left) - getHeight(x->right);
-    y->bf = getHeight(y->left) - getHeight(y->right);
-
-    return y;
-}
-
-void AVL::calculatePositions(Node* node, float currentX, float currentY, float hGap)
+void AA::calculatePositions(Node* node, float currentX, float currentY, float hGap)
 {
     if (node == nullptr) return;
 
@@ -154,60 +119,60 @@ void AVL::calculatePositions(Node* node, float currentX, float currentY, float h
     if (node->right != nullptr) calculatePositions(node->right, currentX + hGap, currentY + delta_y, hGap / 2.0f);
 }
 
-static void DrawForwardButton(float x, float y, AVL& avl)
+static void DrawForwardButton(float x, float y, AA& AA)
 {
     GuiSetState(STATE_NORMAL);
-    if (avl.mode != 1 || avl.animMode == 0) GuiSetState(STATE_DISABLED);
+    if (AA.mode != 1 || AA.animMode == 0) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) 
     {
-        avl.animSpeed = 0.0f; 
+        AA.animSpeed = 0.0f; 
     }
     GuiSetState(STATE_NORMAL);
 }
 
-static void DrawBackwardButton(float x, float y, AVL& avl)
+static void DrawBackwardButton(float x, float y, AA& AA)
 {
-    if (avl.mode != 1 || avl.history.empty()) GuiSetState(STATE_DISABLED);
+    if (AA.mode != 1 || AA.history.empty()) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
     {
-        AVL::Snapshot lastState = avl.history.back();
-        avl.history.pop_back();
-        avl.restoreSnapshot(lastState);
-        if (avl.mode == 1) avl.animSpeed = 999999.0f;
+        AA::Snapshot lastState = AA.history.back();
+        AA.history.pop_back();
+        AA.restoreSnapshot(lastState);
+        if (AA.mode == 1) AA.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
 }
 
-static void DrawToggle(float x, float y, AVL& avl)
+static void DrawToggle(float x, float y, AA& AA)
 {
-    int oldMode = avl.mode;
+    int oldMode = AA.mode;
 
     makeGuiLabel(x + 45, y - 30, "Animation Mode:");
-    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &avl.mode);
+    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &AA.mode);
 
-    if (avl.mode != oldMode)
+    if (AA.mode != oldMode)
     {
-        if (avl.mode == 1) avl.animSpeed = 999999.0f; 
-        else avl.animSpeed = 0.8f;
+        if (AA.mode == 1) AA.animSpeed = 999999.0f; 
+        else AA.animSpeed = 0.8f;
     }
 }
 
-static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& editMode)
+static void DrawInitPanel(float x, float y, AA& AA, char* inputBuf, bool& editMode)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
 
-    makeGuiLabel(x, y, "Initialize AVL Tree");
+    makeGuiLabel(x, y, "Initialize AA Tree");
     
     if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
     {
-        avl.clear(); 
+        AA.clear(); 
 
         int n = GetRandomValue(5, 30); 
 
         for (int i = 0; i < n; i++)
         {
             int v = GetRandomValue(1, 99);
-            avl.insert(v);
+            AA.insert(v);
         }
     }
 
@@ -220,14 +185,14 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
     { 
         std::istringstream iss(inputBuf);
         int value;
-        avl.clear();
-        while (iss >> value && avl.sz < 31) avl.insert(value);
+        AA.clear();
+        while (iss >> value && AA.sz < 31) AA.insert(value);
     }
 
     if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
 }
 
-static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& editModeVal)
+static void DrawOperationPanel(float x, float y, AA& AA, char* valBuf, bool& editModeVal)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 280 }, 1, BLACK);
 
@@ -237,27 +202,27 @@ static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& e
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
     
     int curState = GuiGetState();
-    if (avl.sz >= 31) GuiSetState(STATE_DISABLED);
+    if (AA.sz >= 31) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
         int value;
-        if (iss >> value && avl.sz < 31)
+        if (iss >> value && AA.sz < 31)
         {
-            avl.startInsertAnimation(value);
+            AA.startInsertAnimation(value);
             strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
         }
     }
     GuiSetState(curState);
 
-    if (avl.sz == 0) GuiSetState(STATE_DISABLED);
+    if (AA.sz == 0) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"))
     {
         std::istringstream iss(valBuf);
         int value;
         if (iss >> value)
         {
-            avl.startDeleteAnimation(value);
+            AA.startDeleteAnimation(value);
             strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
         }
     }
@@ -268,14 +233,14 @@ static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& e
         int value;
         if (iss >> value)
         {
-            avl.startSearchAnimation(value);
+            AA.startSearchAnimation(value);
             strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
         }
     }
-    if (GuiButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) avl.clear();
+    if (GuiButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) AA.clear();
 }
 
-void AVL::startInsertAnimation(int value)
+void AA::startInsertAnimation(int value)
 {
     if (sz >= 31) return;
     history.clear();
@@ -302,7 +267,7 @@ void AVL::startInsertAnimation(int value)
     else animSpeed = 0.8f;
 }
 
-void AVL::startDeleteAnimation(int value)
+void AA::startDeleteAnimation(int value)
 {
     if (sz == 0 || root == nullptr) return;
     history.clear(); 
@@ -319,7 +284,7 @@ void AVL::startDeleteAnimation(int value)
     else animSpeed = 0.8f;
 }
 
-void AVL::startSearchAnimation(int value)
+void AA::startSearchAnimation(int value)
 {
     if (sz == 0 || root == nullptr) return;
     history.clear();
@@ -336,7 +301,7 @@ void AVL::startSearchAnimation(int value)
     else animSpeed = 0.8f;
 }
 
-void AVL::updateAnimation()
+void AA::updateAnimation()
 {
     if (isMoving) 
     {
@@ -429,32 +394,23 @@ void AVL::updateAnimation()
                 animMode = 0, targetIdx = -1;
                 return;
             }
+            
             curIdx = targetIdx = curNode->parent->id;
-            curNode = arr[curIdx]; 
-            curNode->height = 1 + std::max(getHeight(curNode->left), getHeight(curNode->right));
-            curNode->bf = getHeight(curNode->left) - getHeight(curNode->right);
+            Node* y = arr[targetIdx];
 
-            if (abs(curNode->bf) > 1) animMode = 4;
+            bool needRotate = false;
+            if (y->left != nullptr && y->left->level == y->level) needRotate = true; 
+            if (y->right != nullptr && y->right->right != nullptr && y->right->right->level == y->level) needRotate = true; 
+
+            if (needRotate) animMode = 4;
+            else animMode = 3;
         } else if (animMode == 4)
         {
             Node* y = arr[targetIdx];
             Node* p = y->parent;
-            Node* newRoot = nullptr;
-
-            int balance = getBalance(y);
-
-            if (balance > 1 && getBalance(y->left) >= 0) newRoot = rightRotate(y); // LL
-            else if (balance < -1 && getBalance(y->right) <= 0) newRoot = leftRotate(y); // RR
-            else if (balance > 1 && getBalance(y->left) < 0) // LR
-            {
-                y->left = leftRotate(y->left);
-                newRoot = rightRotate(y);
-            }
-            else if (balance < -1 && getBalance(y->right) > 0) // RL
-            {
-                y->right = rightRotate(y->right);
-                newRoot = leftRotate(y);
-            }
+            
+            Node* newRoot = skew(y);
+            newRoot = split(newRoot);
 
             if (p == nullptr) root = newRoot;
             else
@@ -464,11 +420,11 @@ void AVL::updateAnimation()
             }
 
             calculatePositions(root, x_root, y_root, delta_x);
-            isMoving = true; 
+            if (y != newRoot) isMoving = true; 
             moveTimer = 0.0f;
             
             curIdx = targetIdx = newRoot->id;
-            animMode = (curIdx != -1) ? 3 : 0; 
+            animMode = (curIdx != -1) ? 3 : 0;
         } else if (animMode == 10)
         {
             if (curNode == nullptr) { animMode = 0; return; }
@@ -504,16 +460,6 @@ void AVL::updateAnimation()
                 else if (p->left != nullptr && p->left->id == delNode->id) p->left = child;
                 else p->right = child;
 
-                if (child != nullptr)
-                {
-                    curIdx = child->id;
-                    child->x = child->vX = delNode->vX;
-                    child->y = child->vY = delNode->vY;
-                }
-                else curIdx = (p != nullptr) ? p->id : -1;
-                
-                targetIdx = curIdx;
-
                 arr[delNode->id] = nullptr;
                 delete delNode;
 
@@ -521,11 +467,10 @@ void AVL::updateAnimation()
                 isMoving = true;
                 moveTimer = 0.0f;
 
-                if (curIdx != -1)
-                {
-                    arr[curIdx]->height = 1 + std::max(getHeight(arr[curIdx]->left), getHeight(arr[curIdx]->right));
-                    arr[curIdx]->bf = getHeight(arr[curIdx]->left) - getHeight(arr[curIdx]->right);
-                }
+                if (child != nullptr) curIdx = child->id; 
+                else curIdx = (p != nullptr) ? p->id : -1;
+                
+                targetIdx = curIdx;
                 animMode = 13;
             }
         } else if (animMode == 14)
@@ -549,16 +494,6 @@ void AVL::updateAnimation()
             else if (p->left != nullptr && p->left->id == delNode->id) p->left = child;
             else p->right = child;
 
-            if (child != nullptr)
-            {
-                curIdx = child->id;
-                child->x = child->vX = delNode->vX;
-                child->y = child->vY = delNode->vY;
-            }
-            else curIdx = (p != nullptr) ? p->id : -1;
-
-            targetIdx = curIdx;
-
             arr[delNode->id] = nullptr;
             delete delNode;
 
@@ -566,49 +501,48 @@ void AVL::updateAnimation()
             isMoving = true;
             moveTimer = 0.0f;
 
-            if (curIdx != -1)
-            {
-                arr[curIdx]->height = 1 + std::max(getHeight(arr[curIdx]->left), getHeight(arr[curIdx]->right));
-                arr[curIdx]->bf = getHeight(arr[curIdx]->left) - getHeight(arr[curIdx]->right);
-            }
+            if (child != nullptr) curIdx = child->id; 
+            else curIdx = (p != nullptr) ? p->id : -1;
+            
+            targetIdx = curIdx;
             animMode = 13;
         } else if (animMode == 13)
         {
-            if (curIdx == -1 || arr[curIdx] == nullptr) { animMode = 0; targetIdx = -1; return; }
-
-            Node* backtrackNode = arr[curIdx];
-
-            if (abs(backtrackNode->bf) > 1) animMode = 15, animSpeed = 0;
-            else
+            bool treeChanged = false;
+            while (curIdx != -1 && arr[curIdx] != nullptr && !treeChanged)
             {
-                curIdx = (backtrackNode->parent != nullptr) ? backtrackNode->parent->id : -1;
-                curNode = (curIdx != -1) ? arr[curIdx] : nullptr;
-                if (curNode != nullptr)
+                Node* y = arr[curIdx];
+                Node* p = y->parent;
+                Node* originalRoot = y;
+
+                decreaseLevel(y);
+                y = skew(y);
+
+                if (y->right != nullptr) 
                 {
-                    curNode->height = 1 + std::max(getHeight(curNode->left), getHeight(curNode->right));
-                    curNode->bf = getHeight(curNode->left) - getHeight(curNode->right);
+                    y->right = skew(y->right);
+                    if (y->right->right != nullptr) y->right->right = skew(y->right->right);
                 }
-                if (curIdx == -1) animMode = 0;
+                
+                y = split(y);
+                if (y->right != nullptr) y->right = split(y->right);
+
+                Node* newRoot = y;
+
+                if (p == nullptr) root = newRoot;
+                else if (p->left != nullptr && p->left->id == originalRoot->id) p->left = newRoot;
+                else p->right = newRoot;
+                if (originalRoot != newRoot) treeChanged = true;
+                curIdx = (newRoot->parent != nullptr) ? newRoot->parent->id : -1;
+                targetIdx = curIdx;
             }
-            targetIdx = curIdx;
-        } else if (animMode == 15)
-        {
-            Node* y = arr[targetIdx]; Node* p = y->parent; Node* newRoot = nullptr;
-            int balance = getBalance(y);
 
-            if (balance > 1 && getBalance(y->left) >= 0) newRoot = rightRotate(y); 
-            else if (balance < -1 && getBalance(y->right) <= 0) newRoot = leftRotate(y); 
-            else if (balance > 1 && getBalance(y->left) < 0) y->left = leftRotate(y->left), newRoot = rightRotate(y);
-            else if (balance < -1 && getBalance(y->right) > 0) y->right = rightRotate(y->right), newRoot = leftRotate(y);
-
-            if (p == nullptr) root = newRoot;
-            else { if (p->left == y) p->left = newRoot; else p->right = newRoot; }
-
-            calculatePositions(root, x_root, y_root, delta_x);
-            isMoving = 1, moveTimer = 0.0f;
-            
-            curIdx = targetIdx = newRoot->id;
-            animMode = (curIdx != -1) ? 13 : 0; 
+            if (treeChanged)
+            {
+                calculatePositions(root, x_root, y_root, delta_x);
+                isMoving = true; 
+                moveTimer = 0.0f;
+            } else animMode = 0; 
         } else if (animMode == 20) 
         {
             if (curNode == nullptr || targetIdx == curIdx)
@@ -629,37 +563,37 @@ void AVL::updateAnimation()
     }
 }
 
-void AVL::captureSnapshot()
+void AA::captureSnapshot()
 {
     Snapshot sn;
     sn.animMode = animMode;
     sn.curIdx = curIdx;
     sn.targetIdx = targetIdx;
-    sn.rootId = (root != nullptr) ? root->id : -1;
+    
+    if (root != nullptr) sn.rootId = root->id;
+    else sn.rootId = -1;
+    
     sn.pendingValue = pendingValue;
 
     for (Node* n : arr) 
     {
         if (n == nullptr) continue;
-        
         Snapshot::NodeState ns;
         ns.id = n->id;
         ns.val = n->value;
-        ns.h = n->height;
-        ns.bf = n->bf;
+        ns.level = n->level;
         ns.vx = n->x; 
         ns.vy = n->y;
         ns.lId = (n->left != nullptr) ? n->left->id : -1;
         ns.rId = (n->right != nullptr) ? n->right->id : -1;
         ns.pId = (n->parent != nullptr) ? n->parent->id : -1;
-        
         sn.states.push_back(ns);
     }
     
     history.push_back(sn);
 }
 
-void AVL::restoreSnapshot(const Snapshot& sn)
+void AA::restoreSnapshot(const Snapshot& sn)
 {
     animMode = sn.animMode;
     curIdx = sn.curIdx;
@@ -667,17 +601,23 @@ void AVL::restoreSnapshot(const Snapshot& sn)
     pendingValue = sn.pendingValue;
 
     for (Node* n : arr) 
-        if (n != nullptr) n->left = n->right = n->parent = nullptr;
+        if (n != nullptr)
+        {
+            n->left = nullptr;
+            n->right = nullptr;
+            n->parent = nullptr;
+        }
 
     for (const Snapshot::NodeState& ns : sn.states) 
     {
         if (arr[ns.id] == nullptr) arr[ns.id] = new Node(ns.val, ns.vx, ns.vy, ns.id, nullptr);
         Node* n = arr[ns.id];
         n->value = ns.val;
-        n->height = ns.h;
-        n->bf = ns.bf;
-        n->x = n->vX = ns.vx; 
-        n->y = n->vY = ns.vy; 
+        n->level = ns.level;
+        n->x = ns.vx; 
+        n->y = ns.vy;
+        n->vX = ns.vx; 
+        n->vY = ns.vy; 
     }
 
     for (const Snapshot::NodeState& ns : sn.states) 
@@ -689,12 +629,11 @@ void AVL::restoreSnapshot(const Snapshot& sn)
     }
 
     root = (sn.rootId != -1) ? arr[sn.rootId] : nullptr;
-
     isMoving = false;
     moveTimer = 0.0f;
 }
 
-static void draw(AVL::Node* cur, AVL& tree)
+static void draw(AA::Node* cur, AA& tree)
 {
     if (!cur) return;
     
@@ -719,18 +658,18 @@ static void draw(AVL::Node* cur, AVL& tree)
         if (myIdx == tree.targetIdx) DrawCircleV(drawPos, 35, RED);
     }
 
-    DrawText(TextFormat("%d", cur->bf), drawPos.x - 5, drawPos.y - 55, 20, RED);
+    DrawText(TextFormat("%d", cur->level), drawPos.x - 5, drawPos.y - 55, 20, RED);
     DrawNode(drawPos, cur->value, 20, 30, 4);
 }
 
-void AVL::drawTree()
+void AA::drawTree()
 {
     if (!root) return;
     updateAnimation();
     draw(root, *this);
 }
 
-void runAVL(AppState &currentState)
+void runAA(AppState &currentState)
 {
     static char valBuffer[16] = "10";
     static char inputBuffer[2048] = "1 2 3 4 5";
@@ -740,19 +679,19 @@ void runAVL(AppState &currentState)
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 
-    myAVL.drawTree();
+    myAA.drawTree();
 
     float X = 60, Y = 150;
     
-    DrawForwardButton(875, 800, myAVL);
-    DrawBackwardButton(725, 800, myAVL);
+    DrawForwardButton(875, 800, myAA);
+    DrawBackwardButton(725, 800, myAA);
 
-    bool isBusy = (myAVL.animMode != 0 || myAVL.isMoving);
+    bool isBusy = (myAA.animMode != 0 || myAA.isMoving);
     if (isBusy) GuiSetState(STATE_DISABLED);
 
-    DrawToggle(X, Y, myAVL);
-    DrawInitPanel(X, Y + 125, myAVL, inputBuffer, editMode);
-    DrawOperationPanel(X, Y + 425, myAVL, valBuffer, editModeValue);
+    DrawToggle(X, Y, myAA);
+    DrawInitPanel(X, Y + 125, myAA, inputBuffer, editMode);
+    DrawOperationPanel(X, Y + 425, myAA, valBuffer, editModeValue);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }
