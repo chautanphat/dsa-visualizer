@@ -1,16 +1,16 @@
-#ifndef AVL_H
-#define AVL_H
+#ifndef AA_H
+#define AA_H
 
 #include "raylib.h"
 #include "common.h"
 #include "code_viewer.h"
 #include <vector>
 
-struct AVL
+struct AA
 {
     struct Node
     {
-        int value, height, bf, id;
+        int value, height, level, id;
         float x, y;
         float vX, vY;
         Node *parent, *left, *right;
@@ -21,7 +21,7 @@ struct AVL
     {
         struct NodeState
         {
-            int id, val, h, bf;
+            int id, val, level;
             int pId, lId, rId;
             float vx, vy;
         };
@@ -36,19 +36,18 @@ struct AVL
     int sz, pendingValue;
     Node* root;
 
-    AVL();
-    ~AVL();
+    AA();
+    ~AA();
 
     void clear();
     void drawTree();
 
+    Node* skew(Node* node);
+    Node* split(Node* node);
+    void decreaseLevel(Node* node);
+
     Node* insertLogic(Node* node, int val, Node* p);
     void insert(int value);
-
-    int getHeight(Node* node);
-    int getBalance(Node* node);
-    Node* rightRotate(Node* y);
-    Node* leftRotate(Node* x);
 
     void calculatePositions(Node* node, float currentX, float currentY, float hGap);
 
@@ -71,6 +70,6 @@ struct AVL
     void restoreSnapshot(const Snapshot& sn);
 };
 
-void runAVL(AppState &currentState);
+void runAA(AppState &currentState);
 
 #endif
