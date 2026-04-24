@@ -628,29 +628,32 @@ void AVL::restoreSnapshot(const Snapshot& sn)
     curIdx = sn.curIdx;
     targetIdx = sn.targetIdx;
     pendingValue = sn.pendingValue;
-    root = (sn.rootId != -1) ? arr[sn.rootId] : nullptr;
 
     for (Node* n : arr) 
         if (n != nullptr) n->left = n->right = n->parent = nullptr;
 
-    for (const Snapshot::NodeState& ns : sn.states)
+    for (const Snapshot::NodeState& ns : sn.states) 
     {
         if (arr[ns.id] == nullptr) arr[ns.id] = new Node(ns.val, ns.vx, ns.vy, ns.id, nullptr);
         Node* n = arr[ns.id];
         n->value = ns.val;
         n->height = ns.h;
         n->bf = ns.bf;
-        n->x = ns.vx; 
-        n->y = ns.vy;
+        n->x = n->vX = ns.vx; 
+        n->y = n->vY = ns.vy; 
     }
 
-    for (const Snapshot::NodeState& ns : sn.states)
+    for (const Snapshot::NodeState& ns : sn.states) 
     {
         Node* n = arr[ns.id];
         if (ns.lId != -1) n->left = arr[ns.lId];
         if (ns.rId != -1) n->right = arr[ns.rId];
         if (ns.pId != -1) n->parent = arr[ns.pId];
     }
+
+    root = (sn.rootId != -1) ? arr[sn.rootId] : nullptr;
+
+    isMoving = false;
     moveTimer = 0.0f;
 }
 
