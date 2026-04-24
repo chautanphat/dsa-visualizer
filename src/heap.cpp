@@ -202,10 +202,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
         std::istringstream iss(inputBuf);
         int value;
         heap.clear();
-        while (iss >> value && heap.sz < 31)
-        {
-            heap.push(value);
-        }
+        while (iss >> value && heap.sz < 31) heap.push(value);
     }
 
     if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
@@ -215,7 +212,7 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 250 }, 1, BLACK);
 
-    makeGuiLabel(x, y, "Insert a node");
+    makeGuiLabel(x, y, "Operations");
     makeGuiLabel(x, y + 35, "Value:");
     
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
