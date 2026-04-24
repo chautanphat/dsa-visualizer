@@ -56,11 +56,9 @@ AVL::Node* AVL::insertLogic(Node* node, int val, Node* p)
 
     int balance = node->bf;
 
-    if (balance > 1 && val < node->left->value)
-        return rightRotate(node);
+    if (balance > 1 && val < node->left->value) return rightRotate(node);
 
-    if (balance < -1 && val > node->right->value)
-        return leftRotate(node);
+    if (balance < -1 && val > node->right->value) return leftRotate(node);
 
     if (balance > 1 && val > node->left->value)
     {
@@ -103,7 +101,8 @@ int AVL::getBalance(Node* node)
     return getHeight(node->left) - getHeight(node->right);
 }
 
-AVL::Node* AVL::rightRotate(Node* y) {
+AVL::Node* AVL::rightRotate(Node* y)
+{
     Node* x = y->left;
     Node* T2 = x->right;
     Node* oldParent = y->parent;
