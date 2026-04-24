@@ -8,7 +8,7 @@ enum AppState
     MENU,
     LINKED_LIST,
     HEAP,
-    AVL,
+    AVLTREE,
     RED_BLACK,
     MST,
     SHORTEST_PATHS

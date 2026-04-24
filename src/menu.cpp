@@ -25,7 +25,7 @@ void DrawMenu(AppState &currentState)
     if (GuiButton((Rectangle){ startX + (btnWidth + paddingX), startY, btnWidth, btnHeight }, "HEAP"))
         currentState = HEAP;
     if (GuiButton((Rectangle){ startX + (btnWidth + paddingX) * 2, startY, btnWidth, btnHeight }, "AVL TREE"))
-        currentState = AVL;
+        currentState = AVLTREE;
 
     float secondRowY = startY + btnHeight + paddingY;
 

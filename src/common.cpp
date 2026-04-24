@@ -25,7 +25,7 @@ bool DrawCustomButton(Rectangle bounds, const char* text)
 
 void makeGuiLabel(float x, float y, const char* text)
 {
-    DrawText(text, x, y, 20, DARKGRAY);
+    DrawText(text, x, y, 20, BLACK);
     // GuiLabel((Rectangle){ x, y, (float)MeasureText(text, GuiGetStyle(DEFAULT, TEXT_SIZE)), 30 }, text);
 }
 
