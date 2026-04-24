@@ -495,8 +495,38 @@ void AVL::updateAnimation()
                 animMode = 14; 
             } else
             {
-                animSpeed = 0;
-                animMode = 12; 
+                Node* child = (delNode->left != nullptr) ? delNode->left : delNode->right;
+                Node* p = delNode->parent;
+
+                if (child != nullptr) child->parent = p;
+
+                if (p == nullptr) root = child;
+                else if (p->left != nullptr && p->left->id == delNode->id) p->left = child;
+                else p->right = child;
+
+                if (child != nullptr)
+                {
+                    curIdx = child->id;
+                    child->x = child->vX = delNode->vX;
+                    child->y = child->vY = delNode->vY;
+                }
+                else curIdx = (p != nullptr) ? p->id : -1;
+                
+                targetIdx = curIdx;
+
+                arr[delNode->id] = nullptr;
+                delete delNode;
+
+                calculatePositions(root, x_root, y_root, delta_x);
+                isMoving = true;
+                moveTimer = 0.0f;
+
+                if (curIdx != -1)
+                {
+                    arr[curIdx]->height = 1 + std::max(getHeight(arr[curIdx]->left), getHeight(arr[curIdx]->right));
+                    arr[curIdx]->bf = getHeight(arr[curIdx]->left) - getHeight(arr[curIdx]->right);
+                }
+                animMode = 13;
             }
         } else if (animMode == 14)
         {
@@ -525,12 +555,15 @@ void AVL::updateAnimation()
                 child->x = child->vX = delNode->vX;
                 child->y = child->vY = delNode->vY;
             }
-            else curIdx = targetIdx = (p != nullptr) ? p->id : -1;
+            else curIdx = (p != nullptr) ? p->id : -1;
+
+            targetIdx = curIdx;
 
             arr[delNode->id] = nullptr;
             delete delNode;
 
             calculatePositions(root, x_root, y_root, delta_x);
+            isMoving = true;
             moveTimer = 0.0f;
 
             if (curIdx != -1)
