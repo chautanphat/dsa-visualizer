@@ -694,8 +694,4 @@ void runAA(AppState &currentState)
     DrawOperationPanel(X, Y + 425, myAA, valBuffer, editModeValue);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
-
-    DrawText(TextFormat("Size: %d", myAA.sz), 100, 60, 20, BLACK);
-    DrawText(TextFormat("Animation Mode: %d %d", myAA.animMode, myAA.isMoving), 100, 80, 20, BLACK);
-    DrawText(TextFormat("Timer: %f %f", myAA.animTimer, myAA.animSpeed), 100, 100, 20, BLACK);
 }

@@ -755,8 +755,4 @@ void runAVL(AppState &currentState)
     DrawOperationPanel(X, Y + 425, myAVL, valBuffer, editModeValue);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
-
-    // DrawText(TextFormat("Size: %d", myAVL.sz), 100, 60, 20, BLACK);
-    // DrawText(TextFormat("Animation Mode: %d %d", myAVL.animMode, myAVL.isMoving), 100, 80, 20, BLACK);
-    // DrawText(TextFormat("Timer: %f %f", myAVL.animTimer, myAVL.animSpeed), 100, 100, 20, BLACK);
 }
