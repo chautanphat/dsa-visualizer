@@ -242,7 +242,7 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
     if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
 }
 
-static void DrawUpdatePanel(float x, float y, AVL& avl, char* valBuf, bool& editModeVal)
+static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& editModeVal)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 280 }, 1, BLACK);
 
@@ -266,7 +266,16 @@ static void DrawUpdatePanel(float x, float y, AVL& avl, char* valBuf, bool& edit
     GuiSetState(curState);
 
     if (avl.sz == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"));
+    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"))
+    {
+        std::istringstream iss(valBuf);
+        int value;
+        if (iss >> value)
+        {
+            avl.startDeleteAnimation(value);
+            strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
+        }
+    }
 
     if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Search"));
     if (GuiButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) avl.clear();
@@ -275,7 +284,7 @@ static void DrawUpdatePanel(float x, float y, AVL& avl, char* valBuf, bool& edit
 void AVL::startInsertAnimation(int value)
 {
     history.clear();
-    this->pendingValue = value; 
+    pendingValue = value; 
 
     if (root == nullptr) 
     {
@@ -293,6 +302,23 @@ void AVL::startInsertAnimation(int value)
         targetIdx = -1;
         animTimer = 0.0f;
     }
+
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.6f;
+}
+
+void AVL::startDeleteAnimation(int value)
+{
+    if (sz == 0 || root == nullptr) return;
+    history.clear(); 
+    pendingValue = value; 
+    isMoving = false;
+    moveTimer = 0.0f;
+
+    animMode = 10;
+    curIdx = root->id;
+    targetIdx = -1;
+    animTimer = 0.0f;
 
     if (mode == 1) animSpeed = 999999.0f;
     else animSpeed = 0.6f;
@@ -334,7 +360,8 @@ void AVL::updateAnimation()
         captureSnapshot(); 
         
         animTimer = 0.0f;
-        if (mode == 1) animSpeed = 999999.0f;
+        if (mode == 0) animSpeed = 0.8f;
+        else animSpeed = 999999.0f;
 
         Node* curNode = (curIdx != -1) ? arr[curIdx] : nullptr;
 
@@ -346,13 +373,11 @@ void AVL::updateAnimation()
             {
                 if (curNode->left == nullptr) animMode = 2;
                 else curIdx = curNode->left->id;
-            } 
-            else if (pendingValue > curNode->value)
+            } else if (pendingValue > curNode->value)
             {
                 if (curNode->right == nullptr) animMode = 2;
                 else curIdx = curNode->right->id;
-            } 
-            else
+            } else
             {
                 targetIdx = curNode->id;
                 animMode = 0;
@@ -392,15 +417,13 @@ void AVL::updateAnimation()
                 animMode = 0, targetIdx = -1;
                 return;
             }
-
             curIdx = targetIdx = curNode->parent->id;
             curNode = arr[curIdx]; 
             curNode->height = 1 + std::max(getHeight(curNode->left), getHeight(curNode->right));
             curNode->bf = getHeight(curNode->left) - getHeight(curNode->right);
 
             if (abs(curNode->bf) > 1) animMode = 4;
-        }
-        else if (animMode == 4)
+        } else if (animMode == 4)
         {
             Node* y = arr[targetIdx];
             Node* p = y->parent;
@@ -432,9 +455,111 @@ void AVL::updateAnimation()
             isMoving = true; 
             moveTimer = 0.0f;
             
-            curIdx = newRoot->id;
-            targetIdx = curIdx;
+            curIdx = targetIdx = newRoot->id;
             animMode = (curIdx != -1) ? 3 : 0; 
+        } else if (animMode == 10)
+        {
+            if (curNode == nullptr) { animMode = 0; return; }
+            
+            if (pendingValue < curNode->value)
+            {
+                if (curNode->left) curIdx = curNode->left->id;
+                else animMode = 0;
+            } else if (pendingValue > curNode->value)
+            {
+                if (curNode->right) curIdx = curNode->right->id;
+                else animMode = 0;
+            } else
+            { 
+                targetIdx = curIdx;
+                animMode = 11;
+            }
+        } else if (animMode == 11)
+        {
+            Node* delNode = arr[targetIdx];
+            if (delNode->left != nullptr && delNode->right != nullptr)
+            {
+                curIdx = delNode->right->id; 
+                animMode = 14; 
+            } else
+            {
+                animSpeed = 0;
+                animMode = 12; 
+            }
+        } else if (animMode == 14)
+        {
+            if (curNode->left != nullptr) curIdx = curNode->left->id; 
+            else
+            {
+                arr[targetIdx]->value = curNode->value;
+                std::swap(curIdx, targetIdx);
+                animMode = 12;
+            }
+        } else if (animMode == 12)
+        {
+            Node* delNode = arr[targetIdx];
+            Node* child = (delNode->left != nullptr) ? delNode->left : delNode->right;
+            Node* p = delNode->parent;
+            Node* onlyChild = (delNode->left != nullptr) ? delNode->left : delNode->right;
+
+            if (child != nullptr) child->parent = p;
+
+            if (p == nullptr) root = child;
+            else if (p->left == delNode) p->left = child;
+            else p->right = child;
+
+            arr[delNode->id] = nullptr;
+            delete delNode;
+
+            calculatePositions(root, x_root, y_root, delta_x);
+            isMoving = true;
+            moveTimer = 0.0f;
+
+            if (onlyChild != nullptr) curIdx = onlyChild->id; 
+            else curIdx = targetIdx = (p != nullptr) ? p->id : -1;
+            if (curIdx != -1)
+            {
+                arr[curIdx]->height = 1 + std::max(getHeight(arr[curIdx]->left), getHeight(arr[curIdx]->right));
+                arr[curIdx]->bf = getHeight(arr[curIdx]->left) - getHeight(arr[curIdx]->right);
+            }
+            animMode = 13;
+        } else if (animMode == 13)
+        {
+            if (curIdx == -1 || arr[curIdx] == nullptr) { animMode = 0; targetIdx = -1; return; }
+
+            Node* backtrackNode = arr[curIdx];
+
+            if (abs(backtrackNode->bf) > 1) animMode = 15, animSpeed = 0;
+            else
+            {
+                curIdx = (backtrackNode->parent != nullptr) ? backtrackNode->parent->id : -1;
+                Node* curNode = (curIdx != -1) ? arr[curIdx] : nullptr;
+                if (curNode != nullptr)
+                {
+                    curNode->height = 1 + std::max(getHeight(curNode->left), getHeight(curNode->right));
+                    curNode->bf = getHeight(curNode->left) - getHeight(curNode->right);
+                }
+                if (curIdx == -1) animMode = 0;
+            }
+            targetIdx = curIdx;
+        } else if (animMode == 15)
+        {
+            Node* y = arr[targetIdx]; Node* p = y->parent; Node* newRoot = nullptr;
+            int balance = getBalance(y);
+
+            if (balance > 1 && getBalance(y->left) >= 0) newRoot = rightRotate(y); 
+            else if (balance < -1 && getBalance(y->right) <= 0) newRoot = leftRotate(y); 
+            else if (balance > 1 && getBalance(y->left) < 0) y->left = leftRotate(y->left), newRoot = rightRotate(y);
+            else if (balance < -1 && getBalance(y->right) > 0) y->right = rightRotate(y->right), newRoot = leftRotate(y);
+
+            if (p == nullptr) root = newRoot;
+            else { if (p->left == y) p->left = newRoot; else p->right = newRoot; }
+
+            calculatePositions(root, x_root, y_root, delta_x);
+            isMoving = true; moveTimer = 0.0f;
+            
+            curIdx = targetIdx = newRoot->id;
+            animMode = (curIdx != -1) ? 13 : 0; 
         }
     }
 }
@@ -554,7 +679,7 @@ void runAVL(AppState &currentState)
 
     DrawToggle(X, Y, myAVL);
     DrawInitPanel(X, Y + 125, myAVL, inputBuffer, editMode);
-    DrawUpdatePanel(X, Y + 425, myAVL, valBuffer, editModeValue);
+    DrawOperationPanel(X, Y + 425, myAVL, valBuffer, editModeValue);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
 

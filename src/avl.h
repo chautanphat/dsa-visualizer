@@ -44,8 +44,6 @@ struct AVL
 
     Node* insertLogic(Node* node, int val, Node* p);
     void insert(int value);
-    void remove(int value);
-    void search(int value);
 
     int getHeight(Node* node);
     int getBalance(Node* node);
@@ -62,8 +60,10 @@ struct AVL
 
     int mode = 0;
 
-    void startInsertAnimation(int value); 
-    void startRemoveAnimation(int value);
+    void startInsertAnimation(int value);
+    void startDeleteAnimation(int value);
+    void startSearchAnimation(int value);
+    
     void updateAnimation();
     
     std::vector<Snapshot> history;
