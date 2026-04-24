@@ -169,7 +169,7 @@ static void DrawToggle(float x, float y, Heap& heap)
     if (heap.mode != oldMode)
     {
         if (heap.mode == 1) heap.animSpeed = 999999.0f; 
-        else heap.animSpeed = 0.6f;
+        else heap.animSpeed = 0.8f;
     }
 }
 
@@ -253,7 +253,7 @@ void Heap::startPushAnimation(int value)
     animTimer = 0.0f;
 
     if (mode == 1) animSpeed = 999999.0f;
-    else animSpeed = 0.6f;
+    else animSpeed = 0.8f;
 }
 
 void Heap::startPopAnimation()
@@ -273,7 +273,7 @@ void Heap::startPopAnimation()
     animTimer = 0.0f;
 
     if (mode == 1) animSpeed = 999999.0f;
-    else animSpeed = 0.6f;
+    else animSpeed = 0.8f;
 }
 
 void Heap::updateAnimation() 
@@ -354,7 +354,7 @@ void Heap::updateAnimation()
     }
 
     animTimer += GetFrameTime();
-    float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.6f;
+    float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.8f;
 
     if (animTimer >= safeSpeed) 
     {
