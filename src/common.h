@@ -9,7 +9,7 @@ enum AppState
     LINKED_LIST,
     HEAP,
     AVLTREE,
-    RED_BLACK,
+    AATREE,
     MST,
     SHORTEST_PATHS
 };
