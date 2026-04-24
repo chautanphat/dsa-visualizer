@@ -512,7 +512,6 @@ void AVL::updateAnimation()
             Node* delNode = arr[targetIdx];
             Node* child = (delNode->left != nullptr) ? delNode->left : delNode->right;
             Node* p = delNode->parent;
-            Node* onlyChild = (delNode->left != nullptr) ? delNode->left : delNode->right;
 
             if (child != nullptr) child->parent = p;
 
@@ -520,14 +519,20 @@ void AVL::updateAnimation()
             else if (p->left != nullptr && p->left->id == delNode->id) p->left = child;
             else p->right = child;
 
+            if (child != nullptr)
+            {
+                curIdx = child->id;
+                child->x = child->vX = delNode->vX;
+                child->y = child->vY = delNode->vY;
+            }
+            else curIdx = targetIdx = (p != nullptr) ? p->id : -1;
+
             arr[delNode->id] = nullptr;
             delete delNode;
 
             calculatePositions(root, x_root, y_root, delta_x);
             moveTimer = 0.0f;
 
-            if (onlyChild != nullptr) curIdx = onlyChild->id; 
-            else curIdx = targetIdx = (p != nullptr) ? p->id : -1;
             if (curIdx != -1)
             {
                 arr[curIdx]->height = 1 + std::max(getHeight(arr[curIdx]->left), getHeight(arr[curIdx]->right));
