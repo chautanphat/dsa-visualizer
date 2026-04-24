@@ -13,7 +13,7 @@ const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
 
-static AppState currentState = AATREE;
+static AppState currentState = MENU;
 int main()
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
