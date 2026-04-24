@@ -21,13 +21,13 @@ struct AVL
     {
         struct NodeState
         {
-            int id, val, h;
+            int id, val, h, bf;
             int pId, lId, rId;
             float vx, vy;
         };
 
         std::vector<NodeState> states;
-        int rootId;
+        int rootId, pendingValue;
         int animMode;
         int curIdx, targetIdx;
     };

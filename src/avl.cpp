@@ -14,19 +14,6 @@ const float y_root = 100.0f;
 const float delta_x = 256.0f;
 const float delta_y = 128.0f;
 
-// std::vector<std::string> pushCode =
-// {gt
-//     "void Push(int val):",                   // 0
-//     "   arr.push_back(val)",                  // 1 (Thêm vào cuối)
-//     "   cur = sz - 1",                        // 2
-//     "   while (cur > 0):",                    // 3
-//     "       p = (cur - 1) / 2",                 // 4 (Tìm nút cha)
-//     "       if (arr[cur] < arr[p]):",           // 5 (So sánh - Giả sử Min Heap)
-//     "           swap(arr[cur], arr[p])",          // 6 (Hoán đổi)
-//     "           cur = p",                         // 7 (Cập nhật vị trí)
-//     "       else: break"                        // 8 (Dừng lại)
-// };
-
 static AVL myAVL;
 
 AVL ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), bf(0), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
@@ -184,11 +171,10 @@ static void DrawBackwardButton(float x, float y, AVL& avl)
     if (avl.mode != 1 || avl.history.empty()) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
     {
-        // AVL::Snapshot lastState = avl.history.back();
-        // avl.history.pop_back();
-        // avl.restoreSnapshot(lastState);
-        
-        // if (avl.mode == 1) avl.animSpeed = 999999.0f;
+        AVL::Snapshot lastState = avl.history.back();
+        avl.history.pop_back();
+        avl.restoreSnapshot(lastState);
+        if (avl.mode == 1) avl.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
 }
@@ -384,8 +370,8 @@ void AVL::updateAnimation()
 
     if (animTimer >= safeSpeed) 
     {
-        captureSnapshot(); 
-        
+        captureSnapshot();
+
         animTimer = 0.0f;
         if (mode == 0) animSpeed = 0.8f;
         else animSpeed = 999999.0f;
@@ -532,14 +518,13 @@ void AVL::updateAnimation()
             if (child != nullptr) child->parent = p;
 
             if (p == nullptr) root = child;
-            else if (p->left == delNode) p->left = child;
+            else if (p->left != nullptr && p->left->id == delNode->id) p->left = child;
             else p->right = child;
 
             arr[delNode->id] = nullptr;
             delete delNode;
 
             calculatePositions(root, x_root, y_root, delta_x);
-            isMoving = true;
             moveTimer = 0.0f;
 
             if (onlyChild != nullptr) curIdx = onlyChild->id; 
@@ -583,7 +568,7 @@ void AVL::updateAnimation()
             else { if (p->left == y) p->left = newRoot; else p->right = newRoot; }
 
             calculatePositions(root, x_root, y_root, delta_x);
-            isMoving = true; moveTimer = 0.0f;
+            isMoving = 1, moveTimer = 0.0f;
             
             curIdx = targetIdx = newRoot->id;
             animMode = (curIdx != -1) ? 13 : 0; 
@@ -614,6 +599,7 @@ void AVL::captureSnapshot()
     sn.curIdx = curIdx;
     sn.targetIdx = targetIdx;
     sn.rootId = (root != nullptr) ? root->id : -1;
+    sn.pendingValue = pendingValue;
 
     for (Node* n : arr) 
     {
@@ -623,6 +609,7 @@ void AVL::captureSnapshot()
         ns.id = n->id;
         ns.val = n->value;
         ns.h = n->height;
+        ns.bf = n->bf;
         ns.vx = n->x; 
         ns.vy = n->y;
         ns.lId = (n->left != nullptr) ? n->left->id : -1;
@@ -640,27 +627,30 @@ void AVL::restoreSnapshot(const Snapshot& sn)
     animMode = sn.animMode;
     curIdx = sn.curIdx;
     targetIdx = sn.targetIdx;
+    pendingValue = sn.pendingValue;
     root = (sn.rootId != -1) ? arr[sn.rootId] : nullptr;
 
     for (Node* n : arr) 
-        if (n != nullptr)
-            n->left = n->right = n->parent = nullptr;
+        if (n != nullptr) n->left = n->right = n->parent = nullptr;
 
-    for (const Snapshot::NodeState& ns : sn.states) 
+    for (const Snapshot::NodeState& ns : sn.states)
     {
+        if (arr[ns.id] == nullptr) arr[ns.id] = new Node(ns.val, ns.vx, ns.vy, ns.id, nullptr);
         Node* n = arr[ns.id];
-        
         n->value = ns.val;
         n->height = ns.h;
+        n->bf = ns.bf;
         n->x = ns.vx; 
         n->y = ns.vy;
+    }
 
+    for (const Snapshot::NodeState& ns : sn.states)
+    {
+        Node* n = arr[ns.id];
         if (ns.lId != -1) n->left = arr[ns.lId];
         if (ns.rId != -1) n->right = arr[ns.rId];
         if (ns.pId != -1) n->parent = arr[ns.pId];
     }
-
-    isMoving = true;
     moveTimer = 0.0f;
 }
 
@@ -725,7 +715,4 @@ void runAVL(AppState &currentState)
     DrawOperationPanel(X, Y + 425, myAVL, valBuffer, editModeValue);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
-
-    DrawText(TextFormat("Animation Mode: %d %d", myAVL.animMode, myAVL.isMoving), 100, 80, 20, BLACK);
-    DrawText(TextFormat("Timer: %f %f", myAVL.animTimer, myAVL.animSpeed), 100, 100, 20, BLACK);
 }
