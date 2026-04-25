@@ -186,33 +186,30 @@ void MST::randomize()
 bool MST::manualUpload(const std::string &input)
 {
     std::istringstream iss(input);
-    std::map<int, int> labelToIndex;
     std::vector<std::tuple<int, int, int>> parsedEdges;
+    int maxNode = 0;
 
     int u, v, w;
     while (iss >> u >> v >> w)
     {
         if (u == v || w < 1) continue;
-        if (labelToIndex.size() >= 12 && !labelToIndex.count(u) && !labelToIndex.count(v)) continue;
-
-        if (!labelToIndex.count(u)) labelToIndex[u] = labelToIndex.size();
-        if (!labelToIndex.count(v)) labelToIndex[v] = labelToIndex.size();
-
+        if (u < 1 || v < 1) continue;
         parsedEdges.emplace_back(u, v, w);
+        if (u > maxNode) maxNode = u;
+        if (v > maxNode) maxNode = v;
     }
 
     if (parsedEdges.empty()) return false;
 
     clear();
-    nodes.resize(labelToIndex.size());
-    std::vector<int> labels(labelToIndex.size());
-    for (auto &p : labelToIndex) labels[p.second] = p.first;
-    for (int i = 0; i < (int)labels.size(); i++) nodes[i] = Node(i, labels[i]);
+    nodes.resize(maxNode);
+    for (int i = 0; i < maxNode; i++) nodes[i] = Node(i, i + 1);
 
     int nextId = 0;
     for (auto &[lu, lv, ww] : parsedEdges)
     {
-        int uu = labelToIndex[lu], vv = labelToIndex[lv];
+        int uu = lu - 1;
+        int vv = lv - 1;
         bool dup = false;
         for (auto &e : edges) if ((e.u == uu && e.v == vv) || (e.u == vv && e.v == uu)) { dup = true; break; }
         if (!dup) edges.push_back({ nextId++, uu, vv, ww, 0 });
@@ -388,7 +385,8 @@ static void DrawToggle(float x, float y, MST &mst)
 
 static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &editMode)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
+    static Vector2 inputScroll = { 0.0f, 0.0f };
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
     makeGuiLabel(x, y, "Initialize MST Graph");
 
     if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
@@ -402,8 +400,8 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
         mst.manualUpload(inputBuf);
 
-    if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode))
-        editMode = !editMode;
+    makeGuiLabel(x, y + 145, "Edges (u, v w):");
+    DrawMultiLineEditor((Rectangle){ x, y + 175, 300, 110 }, inputBuf, 2048, editMode, inputScroll);
 }
 
 static void DrawOperationPanel(float x, float y, MST &mst)
@@ -424,7 +422,7 @@ static void DrawOperationPanel(float x, float y, MST &mst)
 static void DrawStatusPanel(float x, float y, MST &mst)
 {
     DrawText(mst.statusText.c_str(), (int)x, (int)y, 20, BLACK);
-    DrawText(TextFormat("MST Total: %d", mst.totalWeight), (int)x, (int)(y + 25), 20, GREEN);
+    DrawText(TextFormat("Total sum: %d", mst.totalWeight), (int)x, (int)(y + 25), 20, GREEN);
 }
 
 void MST::drawGraph()
@@ -489,7 +487,7 @@ void MST::drawGraph()
 
 void runMST(AppState &currentState)
 {
-    static char inputBuffer[2048] = "1 2 10 2 3 5 1 3 15";
+    static char inputBuffer[2048] = "1 2 10\n2 3 5\n1 3 15";
     static bool editMode = false;
     const float statusX = 1400.0f;
     const float statusY = 40.0f;
@@ -505,8 +503,8 @@ void runMST(AppState &currentState)
     if (isBusy) GuiSetState(STATE_DISABLED);
     DrawToggle(X, Y, myMST);
     DrawInitPanel(X, Y + 125, myMST, inputBuffer, editMode);
-    DrawOperationPanel(X, Y + 425, myMST);
-    if (!isBusy) GuiSetState(STATE_NORMAL);
-
+    DrawOperationPanel(X, Y + 500, myMST);
     DrawStatusPanel(statusX, statusY, myMST);
+    
+    if (!isBusy) GuiSetState(STATE_NORMAL);
 }
