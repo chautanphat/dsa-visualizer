@@ -10,7 +10,7 @@ enum AppState
     HEAP,
     AVLTREE,
     AATREE,
-    MST,
+    MINIMUM_SPANNING_TREE,
     SHORTEST_PATHS
 };
 
@@ -19,5 +19,6 @@ void makeGuiLabel(float x, float y, const char* text);
 void DrawNumberInBox(Rectangle box, int number, int fontSize, Color textColor);
 void DrawTextInBox(Rectangle box, const char* text, int fontSize, Color textColor);
 void DrawNode(Vector2 center, int value, int fontSize = 20, float radius = 30, float borderThick = 4);
+void DrawMultiLineEditor(Rectangle bounds, char *buffer, int maxSize, bool &editMode, Vector2 &scroll);
 
 #endif
