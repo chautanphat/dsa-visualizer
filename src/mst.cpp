@@ -29,10 +29,12 @@ void MST::clear()
     currentEdge = -1;
     selectedEdge = -1;
     edgesAccepted = 0;
+    totalWeight = 0;
     animMode = 0;
     animTimer = 0.0f;
     animSpeed = 0.8f;
     mstCompleted = false;
+    statusText = "Ready.";
 }
 
 void MST::calculateNodePositions()
@@ -243,8 +245,10 @@ void MST::startMSTAnimation()
     currentEdge = 0;
     selectedEdge = -1;
     edgesAccepted = 0;
+    totalWeight = 0;
     animMode = 1;
     mstCompleted = false;
+    statusText = "Ready.";
 
     if (mode == 1)
         animSpeed = 999999.0f;
@@ -267,15 +271,10 @@ void MST::updateAnimation()
 
     if (animMode == 1)
     {
-        if (edgesAccepted >= (int)nodes.size() - 1 || currentEdge >= (int)sortedEdgeIds.size())
-        {
-            animMode = 0;
-            mstCompleted = true;
-            for (auto &e : edges) if (e.state == 0) e.state = 3;
-            return;
-        }
         selectedEdge = sortedEdgeIds[currentEdge];
         edges[selectedEdge].state = 1;
+        const Edge &edge = edges[selectedEdge];
+        statusText = TextFormat("Check %d-%d (%d).", nodes[edge.u].label, nodes[edge.v].label, edge.weight);
         animMode = 2;
     }
     else if (animMode == 2)
@@ -287,8 +286,14 @@ void MST::updateAnimation()
             e.state = 2;
             unionSets(ur, vr);
             edgesAccepted++;
+            totalWeight += e.weight;
+            statusText = TextFormat("Accept %d-%d.", nodes[e.u].label, nodes[e.v].label);
         }
-        else e.state = 3;
+        else
+        {
+            e.state = 3;
+            statusText = TextFormat("Reject %d-%d. Cycle.", nodes[e.u].label, nodes[e.v].label);
+        }
 
         currentEdge++;
         selectedEdge = -1;
@@ -298,8 +303,8 @@ void MST::updateAnimation()
             animMode = 0;
             mstCompleted = true;
             for (auto &e : edges) if (e.state == 0) e.state = 3;
-        }
-        else animMode = 1;
+            statusText = TextFormat("MST complete.");
+        } else animMode = 1;
     }
 }
 
@@ -310,7 +315,9 @@ void MST::captureSnapshot()
     sn.selectedEdge = selectedEdge;
     sn.animMode = animMode;
     sn.edgesAccepted = edgesAccepted;
+    sn.totalWeight = totalWeight;
     sn.mstCompleted = mstCompleted;
+    sn.statusText = statusText;
     sn.parent = parent;
     sn.rank = rank;
 
@@ -326,7 +333,9 @@ void MST::restoreSnapshot(const Snapshot &sn)
     selectedEdge = sn.selectedEdge;
     animMode = sn.animMode;
     edgesAccepted = sn.edgesAccepted;
+    totalWeight = sn.totalWeight;
     mstCompleted = sn.mstCompleted;
+    statusText = sn.statusText;
     parent = sn.parent;
     rank = sn.rank;
 
@@ -412,6 +421,12 @@ static void DrawOperationPanel(float x, float y, MST &mst)
         mst.clear();
 }
 
+static void DrawStatusPanel(float x, float y, MST &mst)
+{
+    DrawText(mst.statusText.c_str(), (int)x, (int)y, 20, BLACK);
+    DrawText(TextFormat("MST Total: %d", mst.totalWeight), (int)x, (int)(y + 25), 20, GREEN);
+}
+
 void MST::drawGraph()
 {
     updateAnimation();
@@ -476,6 +491,8 @@ void runMST(AppState &currentState)
 {
     static char inputBuffer[2048] = "1 2 10 2 3 5 1 3 15";
     static bool editMode = false;
+    const float statusX = 1400.0f;
+    const float statusY = 40.0f;
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
     myMST.drawGraph();
@@ -490,4 +507,6 @@ void runMST(AppState &currentState)
     DrawInitPanel(X, Y + 125, myMST, inputBuffer, editMode);
     DrawOperationPanel(X, Y + 425, myMST);
     if (!isBusy) GuiSetState(STATE_NORMAL);
+
+    DrawStatusPanel(statusX, statusY, myMST);
 }

@@ -39,7 +39,9 @@ struct MST
         int selectedEdge;
         int animMode;
         int edgesAccepted;
+        int totalWeight;
         bool mstCompleted;
+        std::string statusText;
     };
 
     std::vector<Node> nodes;
@@ -52,11 +54,14 @@ struct MST
     int currentEdge = -1;
     int selectedEdge = -1;
     int edgesAccepted = 0;
+    int totalWeight = 0;
 
     int animMode = 0;
     float animTimer = 0.0f;
     float animSpeed = 0.8f;
     bool mstCompleted = false;
+
+    std::string statusText;
 
     int draggingNode = -1;
     Vector2 dragOffset = { 0.0f, 0.0f };
