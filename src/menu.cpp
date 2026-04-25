@@ -32,7 +32,7 @@ void DrawMenu(AppState &currentState)
     if (GuiButton((Rectangle){ startX, secondRowY, btnWidth, btnHeight }, "AA TREE"))
         currentState = AATREE;
     if (GuiButton((Rectangle){ startX + (btnWidth + paddingX), secondRowY, btnWidth, btnHeight }, "MINIMUM SPANNING TREE"))
-        currentState = MST;
+        currentState = MINIMUM_SPANNING_TREE;
     if (GuiButton((Rectangle){ startX + (btnWidth + paddingX) * 2, secondRowY, btnWidth, btnHeight }, "SHORTEST PATHS"))
         currentState = SHORTEST_PATHS;
 }

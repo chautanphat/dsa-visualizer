@@ -7,13 +7,14 @@
 #include "heap.h"
 #include "avl.h"
 #include "aa.h"
+#include "mst.h"
 #include <ctime>
 
 const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
 
-static AppState currentState = MENU;
+static AppState currentState = MINIMUM_SPANNING_TREE;
 int main()
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
@@ -43,6 +44,9 @@ int main()
                     break;
                 case AATREE:
                     runAA(currentState);
+                    break;
+                case MINIMUM_SPANNING_TREE:
+                    runMST(currentState);
                     break;
             }
             if (currentState != MENU)

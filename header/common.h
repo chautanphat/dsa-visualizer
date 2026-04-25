@@ -10,7 +10,7 @@ enum AppState
     HEAP,
     AVLTREE,
     AATREE,
-    MST,
+    MINIMUM_SPANNING_TREE,
     SHORTEST_PATHS
 };
 
