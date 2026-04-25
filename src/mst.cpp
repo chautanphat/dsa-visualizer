@@ -406,7 +406,7 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
 
 static void DrawOperationPanel(float x, float y, MST &mst)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 200 }, 1, BLACK);
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 1, BLACK);
     makeGuiLabel(x, y, "Operations");
 
     int curState = GuiGetState();
