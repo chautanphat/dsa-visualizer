@@ -108,15 +108,82 @@ void MST::insert(int value)
         if (n != nullptr) n->vX = n->x, n->vY = n->y;
 }
 
-void MST::calculatePositions(Node* node, float currentX, float currentY, float hGap)
+void MST::calculateNodePositions()
 {
-    if (node == nullptr) return;
+    int n = (int)nodes.size();
+    if (n == 0) return;
 
-    node->x = currentX;
-    node->y = currentY;
-    
-    if (node->left != nullptr) calculatePositions(node->left, currentX - hGap, currentY + delta_y, hGap / 2.0f);
-    if (node->right != nullptr) calculatePositions(node->right, currentX + hGap, currentY + delta_y, hGap / 2.0f);
+    float radius = graphRadius;
+    if (n >= 7) radius -= 40.0f;
+    if (n >= 8) radius -= 20.0f;
+
+    for (int i = 0; i < n; i++)
+    {
+        float angle = 2.0f * PI * i / n;
+        nodes[i].x = graphCenterX + cosf(angle) * radius;
+        nodes[i].y = graphCenterY + sinf(angle) * radius;
+    }
+
+    std::vector<Vector2> disp(n);
+    float area = radius * radius * 4.0f;
+    float k = sqrtf(area / n) * 1.5;
+    float temperature = radius * 0.8f;
+    int iterations = 200;
+
+    for (int iter = 0; iter < iterations; iter++)
+    {
+        std::fill(disp.begin(), disp.end(), Vector2{0.0f, 0.0f});
+
+        for (int i = 0; i < n; i++)
+            for (int j = i + 1; j < n; j++)
+            {
+                Vector2 delta = {nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y};
+                float dist = sqrtf(delta.x * delta.x + delta.y * delta.y) + 0.01f;
+                float force = k * k / dist;
+                float len = sqrtf(delta.x * delta.x + delta.y * delta.y);
+                Vector2 dir = {delta.x / len, delta.y / len};
+                disp[i].x += dir.x * force;
+                disp[i].y += dir.y * force;
+                disp[j].x -= dir.x * force;
+                disp[j].y -= dir.y * force;
+            }
+
+        for (const Edge &edge : edges)
+        {
+            Vector2 delta = {nodes[edge.u].x - nodes[edge.v].x, nodes[edge.u].y - nodes[edge.v].y};
+            float dist = sqrtf(delta.x * delta.x + delta.y * delta.y) + 0.01f;
+            float force = dist * dist / k;
+            float len = sqrtf(delta.x * delta.x + delta.y * delta.y);
+            Vector2 dir = {delta.x / len, delta.y / len};
+            disp[edge.u].x -= dir.x * force;
+            disp[edge.u].y -= dir.y * force;
+            disp[edge.v].x += dir.x * force;
+            disp[edge.v].y += dir.y * force;
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            Vector2 centerForce = {graphCenterX - nodes[i].x, graphCenterY - nodes[i].y};
+            disp[i].x += centerForce.x * 0.01f;
+            disp[i].y += centerForce.y * 0.01f;
+
+            float dispLen = sqrtf(disp[i].x * disp[i].x + disp[i].y * disp[i].y);
+            if (dispLen > temperature)
+            {
+                float scale = temperature / dispLen;
+                disp[i].x *= scale;
+                disp[i].y *= scale;
+            }
+
+            nodes[i].x += disp[i].x;
+            nodes[i].y += disp[i].y;
+
+            nodes[i].x = Clamp(nodes[i].x, graphCenterX - radius, graphCenterX + radius);
+            nodes[i].y = Clamp(nodes[i].y, graphCenterY - radius, graphCenterY + radius);
+        }
+
+        temperature *= 0.95f;
+    }
 }
 
 static void DrawForwardButton(float x, float y, MST& MST)
