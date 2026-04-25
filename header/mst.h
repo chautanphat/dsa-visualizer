@@ -13,8 +13,7 @@ struct MST
         int id;
         int label;
         float x, y;
-        Node(int _id = 0, int _label = 0, float _x = 0.0f, float _y = 0.0f)
-            : id(_id), label(_label), x(_x), y(_y) {}
+        Node(int _id = 0, int _label = 0, float _x = 0.0f, float _y = 0.0f) : id(_id), label(_label), x(_x), y(_y) {}
     };
 
     struct Edge
