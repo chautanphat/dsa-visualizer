@@ -186,6 +186,36 @@ void MST::calculateNodePositions()
     }
 }
 
+int MST::findSet(int v)
+{
+    if (v < 0 || v >= (int)parent.size()) return v;
+    if (parent[v] == v) return v;
+    return parent[v] = findSet(parent[v]);
+}
+
+void MST::unionSets(int a, int b)
+{
+    a = findSet(a);
+    b = findSet(b);
+    if (a == b) return;
+    if (rank[a] < rank[b]) std::swap(a, b);
+    parent[b] = a;
+    if (rank[a] == rank[b]) rank[a]++;
+}
+
+void MST::rebuildSortedEdges()
+{
+    sortedEdgeIds.resize(edges.size());
+    std::iota(sortedEdgeIds.begin(), sortedEdgeIds.end(), 0);
+
+    std::sort(sortedEdgeIds.begin(), sortedEdgeIds.end(), [this](int a, int b)
+    {
+        if (edges[a].weight != edges[b].weight) return edges[a].weight < edges[b].weight;
+        if (edges[a].u != edges[b].u) return edges[a].u < edges[b].u;
+        return edges[a].v < edges[b].v;
+    });
+}
+
 static void DrawForwardButton(float x, float y, MST& MST)
 {
     GuiSetState(STATE_NORMAL);
