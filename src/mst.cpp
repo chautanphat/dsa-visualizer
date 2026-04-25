@@ -736,40 +736,64 @@ void MST::restoreSnapshot(const Snapshot& sn)
     moveTimer = 0.0f;
 }
 
-static void draw(MST::Node* cur, MST& tree)
+void MST::drawGraph()
 {
-    if (!cur) return;
-    
-    if (cur->left != nullptr)
-    {
-        DrawLineEx({cur->vX, cur->vY}, {cur->left->vX, cur->left->vY}, 3.0f, BLACK);
-        draw(cur->left, tree);
-    }
-    
-    if (cur->right != nullptr)
-    {
-        DrawLineEx({cur->vX, cur->vY}, {cur->right->vX, cur->right->vY}, 3.0f, BLACK);
-        draw(cur->right, tree);
-    }
-
-    int myIdx = cur->id; 
-    Vector2 drawPos = {cur->vX, cur->vY};
-
-    if (tree.animMode != 0)
-    {
-        if (myIdx == tree.curIdx) DrawCircleV(drawPos, 35, ORANGE);
-        if (myIdx == tree.targetIdx) DrawCircleV(drawPos, 35, RED);
-    }
-
-    DrawText(TextFormat("%d", cur->level), drawPos.x - 5, drawPos.y - 55, 20, RED);
-    DrawNode(drawPos, cur->value, 20, 30, 4);
-}
-
-void MST::drawTree()
-{
-    if (!root) return;
     updateAnimation();
-    draw(root, *this);
+
+    Vector2 mouse = GetMousePosition();
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        for (int i = (int)nodes.size() - 1; i >= 0; i--)
+        {
+            Vector2 d = {mouse.x - nodes[i].x, mouse.y - nodes[i].y};
+            if (d.x * d.x + d.y * d.y <= 900.0f)
+            {
+                draggingNode = i;
+                dragOffset = {nodes[i].x - mouse.x, nodes[i].y - mouse.y};
+                break;
+            }
+        }
+
+    if (draggingNode >= 0 && IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+    {
+        nodes[draggingNode].x = mouse.x + dragOffset.x;
+        nodes[draggingNode].y = mouse.y + dragOffset.y;
+    }
+
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) draggingNode = -1;
+
+    int ha = -1, hb = -1;
+    for (auto &e : edges) if (e.state == 1) { ha = e.u; hb = e.v; break; }
+
+    for (auto &e : edges)
+    {
+        if (e.u < 0 || e.v >= (int)nodes.size()) continue;
+        Vector2 a = {nodes[e.u].x, nodes[e.u].y}, b = {nodes[e.v].x, nodes[e.v].y};
+        Color c = BLACK;
+        float th = 2.0f;
+        unsigned char al = 255;
+
+        if (e.state == 0) { if (animMode || mstCompleted) { c = DARKGRAY; al = 100; } }
+        else if (e.state == 1) { c = ORANGE; th = 4.0f; }
+        else if (e.state == 2) { c = GREEN; th = 4.0f; }
+        else if (e.state == 3) { c = DARKGRAY; al = 100; }
+
+        c.a = al;
+        DrawLineEx(a, b, th, c);
+
+        Vector2 mid = {(a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f};
+        Vector2 diff = {b.x - a.x, b.y - a.y};
+        float len = sqrtf(diff.x * diff.x + diff.y * diff.y) + 0.01f;
+        Vector2 perp = {-diff.y / len, diff.x / len};
+        Vector2 textPos = {mid.x + perp.x * 18.0f, mid.y + perp.y * 18.0f};
+        DrawText(TextFormat("%d", e.weight), textPos.x - 10, textPos.y - 10, 20, BLACK);
+    }
+
+    for (auto &n : nodes)
+    {
+        Vector2 p = {n.x, n.y};
+        if (n.id == ha || n.id == hb) DrawCircleV(p, 35, ORANGE);
+        DrawNode(p, n.label, 20, 30, 4);
+    }
 }
 
 void runMST(AppState &currentState)
