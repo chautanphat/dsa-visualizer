@@ -40,6 +40,8 @@ struct MST
     ~MST();
 
     void clear();
+    void randomize();
+    bool manualUpload(const std::string &input);
     void drawTree();
 
     Node* skew(Node* node);

@@ -157,87 +157,123 @@ static void DrawToggle(float x, float y, MST& MST)
     }
 }
 
-static void DrawInitPanel(float x, float y, MST& MST, char* inputBuf, bool& editMode)
+void MST::randomize()
+{
+    clear();
+
+    int nodeCount = GetRandomValue(5, 8);
+    nodes.reserve(nodeCount);
+    for (int i = 0; i < nodeCount; i++)
+        nodes.push_back(Node(i, i + 1));
+
+    int nextEdgeId = 0;
+    for (int i = 1; i < nodeCount; i++)
+    {
+        int j = GetRandomValue(0, i - 1);
+        edges.push_back({ nextEdgeId++, j, i, GetRandomValue(1, 99), 0 });
+    }
+
+    for (int i = 0; i < nodeCount; i++)
+        for (int j = i + 1; j < nodeCount; j++)
+        {
+            bool exists = false;
+            for (const auto &e : edges)
+                if ((e.u == i && e.v == j) || (e.u == j && e.v == i))
+                {
+                    exists = true;
+                    break;
+                }
+            if (!exists && GetRandomValue(0, 1))
+                edges.push_back({ nextEdgeId++, i, j, GetRandomValue(1, 99), 0 });
+        }
+
+    calculateNodePositions();
+    rebuildSortedEdges();
+    parent.resize(nodeCount);
+    std::fill(parent.begin(), parent.end(), 0);
+    std::iota(parent.begin(), parent.end(), 0);
+    rank.assign(nodeCount, 0);
+}
+
+bool MST::manualUpload(const std::string &input)
+{
+    std::istringstream iss(input);
+    std::map<int, int> labelToIndex;
+    std::vector<std::tuple<int, int, int>> parsedEdges;
+
+    int u, v, w;
+    while (iss >> u >> v >> w)
+    {
+        if (u == v || w < 1) continue;
+        if (labelToIndex.size() >= 12 && !labelToIndex.count(u) && !labelToIndex.count(v)) continue;
+
+        if (!labelToIndex.count(u)) labelToIndex[u] = labelToIndex.size();
+        if (!labelToIndex.count(v)) labelToIndex[v] = labelToIndex.size();
+
+        parsedEdges.emplace_back(u, v, w);
+    }
+
+    if (parsedEdges.empty()) return false;
+
+    clear();
+    nodes.resize(labelToIndex.size());
+    std::vector<int> labels(labelToIndex.size());
+    for (auto &p : labelToIndex) labels[p.second] = p.first;
+    for (int i = 0; i < (int)labels.size(); i++) nodes[i] = Node(i, labels[i]);
+
+    int nextId = 0;
+    for (auto &[lu, lv, ww] : parsedEdges)
+    {
+        int uu = labelToIndex[lu], vv = labelToIndex[lv];
+        bool dup = false;
+        for (auto &e : edges) if ((e.u == uu && e.v == vv) || (e.u == vv && e.v == uu)) { dup = true; break; }
+        if (!dup) edges.push_back({ nextId++, uu, vv, ww, 0 });
+    }
+
+    if (edges.empty()) return false;
+
+    calculateNodePositions();
+    rebuildSortedEdges();
+    parent.resize(nodes.size());
+    std::iota(parent.begin(), parent.end(), 0);
+    rank.assign(nodes.size(), 0);
+
+    return true;
+}
+
+static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &editMode)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
+    makeGuiLabel(x, y, "Initialize MST Graph");
 
-    makeGuiLabel(x, y, "Initialize MST Tree");
-    
     if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
-    {
-        MST.clear(); 
-
-        int n = GetRandomValue(5, 30); 
-
-        for (int i = 0; i < n; i++)
-        {
-            int v = GetRandomValue(1, 99);
-            MST.insert(v);
-        }
-    }
+        mst.randomize();
 
     if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
-        
+        // Upload support can be added later.
     }
 
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
-    { 
-        std::istringstream iss(inputBuf);
-        int value;
-        MST.clear();
-        while (iss >> value && MST.sz < 31) MST.insert(value);
-    }
+        mst.manualUpload(inputBuf);
 
-    if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
+    if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode))
+        editMode = !editMode;
 }
 
-static void DrawOperationPanel(float x, float y, MST& MST, char* valBuf, bool& editModeVal)
+static void DrawOperationPanel(float x, float y, MST &mst)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 280 }, 1, BLACK);
-
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 200 }, 1, BLACK);
     makeGuiLabel(x, y, "Operations");
-    makeGuiLabel(x, y + 35, "Value:");
-    
-    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
-    
+
     int curState = GuiGetState();
-    if (MST.sz >= 31) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
-    { 
-        std::istringstream iss(valBuf);
-        int value;
-        if (iss >> value && MST.sz < 31)
-        {
-            MST.startInsertAnimation(value);
-            strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
-        }
-    }
+    if (mst.nodes.empty() || mst.edges.empty()) GuiSetState(STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Generate MST"))
+        mst.startMSTAnimation();
     GuiSetState(curState);
 
-    if (MST.sz == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"))
-    {
-        std::istringstream iss(valBuf);
-        int value;
-        if (iss >> value)
-        {
-            MST.startDeleteAnimation(value);
-            strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
-        }
-    }
-
-    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Search"))
-    {
-        std::istringstream iss(valBuf);
-        int value;
-        if (iss >> value)
-        {
-            MST.startSearchAnimation(value);
-            strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
-        }
-    }
-    if (GuiButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) MST.clear();
+    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear"))
+        mst.clear();
 }
 
 void MST::startInsertAnimation(int value)
