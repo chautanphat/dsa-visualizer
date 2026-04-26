@@ -21,7 +21,7 @@ struct DIJKSTRA
         int id;
         int u, v;
         int weight;
-        int state; // 0 = unexplored, 1 = selected, 2 = accepted, 3 = rejected
+        int state; // 0 = normal, 1 = checking, 2 = predecessor tree
     };
 
     struct Snapshot
@@ -33,29 +33,28 @@ struct DIJKSTRA
         };
 
         std::vector<EdgeState> edgeStates;
-        std::vector<int> parent;
-        std::vector<int> rank;
+        std::vector<int> distances;
+        std::vector<int> predecessor;
+        std::vector<bool> finalized;
+        std::vector<int> pendingEdges;
         int currentEdge;
         int selectedEdge;
+        int activeNode;
         int animMode;
-        int edgesAccepted;
-        int totalWeight;
         bool dijkstraCompleted;
         std::string statusText;
     };
 
     std::vector<Node> nodes;
     std::vector<Edge> edges;
-    std::vector<int> sortedEdgeIds;
     std::vector<int> distances;
-
-    std::vector<int> parent;
-    std::vector<int> rank;
+    std::vector<int> predecessor;
+    std::vector<bool> finalized;
+    std::vector<int> pendingEdges;
 
     int currentEdge = -1;
     int selectedEdge = -1;
-    int edgesAccepted = 0;
-    int totalWeight = 0;
+    int activeNode = -1;
 
     int animMode = 0;
     float animTimer = 0.0f;
@@ -73,8 +72,8 @@ struct DIJKSTRA
 
     std::vector<Snapshot> history;
 
-    DIJKSTRA();
-    ~DIJKSTRA();
+    DIJKSTRA() = default;
+    ~DIJKSTRA() = default;
 
     void clear();
     void drawGraph();
@@ -86,10 +85,8 @@ struct DIJKSTRA
     void restoreSnapshot(const Snapshot &sn);
 
     void calculateNodePositions();
-    void rebuildSortedEdges();
     void resetDistances();
-    int findSet(int v);
-    void unionSets(int a, int b);
+    void sync();
 };
 
 void runDijkstra(AppState &currentState);

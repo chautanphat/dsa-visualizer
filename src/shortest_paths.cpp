@@ -5,40 +5,59 @@
 #include "common.h"
 #include <vector>
 #include <sstream>
-#include <map>
-#include <numeric>
+#include <tuple>
 #include <algorithm>
 #include <cmath>
-#include <limits>
 
-static const float graphCenterX = 900.0f;
-static const float graphCenterY = 420.0f;
-static const float graphRadius = 320.0f;
+const float graphCenterX = 900.0f;
+const float graphCenterY = 420.0f;
+const float graphRadius = 320.0f;
+const float animationSpeed = 0.8f;
+const float stepModePause = 999999.0f;
+const int INF = 1000000000;
 static DIJKSTRA myDijkstra;
 
-DIJKSTRA::DIJKSTRA() {}
-DIJKSTRA::~DIJKSTRA() {}
+static bool sameEdge(const DIJKSTRA::Edge &edge, int a, int b)
+{
+    return (edge.u == a && edge.v == b) || (edge.u == b && edge.v == a);
+}
+
+static void changeSpeed(DIJKSTRA &dijkstra)
+{
+    dijkstra.animSpeed = (dijkstra.mode == 1) ? stepModePause : animationSpeed;
+}
+
+static int findNext(const DIJKSTRA &dijkstra)
+{
+    int nextNode = -1, bestDistance = INF;
+    for (int i = 0; i < (int)dijkstra.nodes.size(); i++)
+        if (!dijkstra.finalized[i] && dijkstra.distances[i] < bestDistance)
+        {
+            bestDistance = dijkstra.distances[i];
+            nextNode = i;
+        }
+    return nextNode;
+}
+
+static const char *DistanceText(int distance)
+{
+    return (distance == INF) ? "INF" : TextFormat("%d", distance);
+}
+
+static void RestorePreviousStep(DIJKSTRA &dijkstra)
+{
+    DIJKSTRA::Snapshot lastState = dijkstra.history.back();
+    dijkstra.history.pop_back();
+    dijkstra.restoreSnapshot(lastState);
+}
 
 void DIJKSTRA::clear()
 {
-    nodes.clear();
-    edges.clear();
-    sortedEdgeIds.clear();
-    distances.clear();
-    parent.clear();
-    rank.clear();
-    history.clear();
-    currentEdge = -1;
-    selectedEdge = -1;
-    edgesAccepted = 0;
-    totalWeight = 0;
-    animMode = 0;
-    animTimer = 0.0f;
-    animSpeed = 0.8f;
-    dijkstraCompleted = false;
-    sourceNode = -1;
-    draggingNode = -1;
-    statusText = "Ready.";
+    nodes.clear(); edges.clear(); distances.clear(); predecessor.clear();
+    finalized.clear(); pendingEdges.clear(); history.clear();
+    currentEdge = selectedEdge = activeNode = draggingNode = sourceNode = -1;
+    animMode = 0; animTimer = 0.0f; dijkstraCompleted = false;
+    animSpeed = animationSpeed; statusText = "Ready.";
 }
 
 void DIJKSTRA::calculateNodePositions()
@@ -46,10 +65,7 @@ void DIJKSTRA::calculateNodePositions()
     int n = (int)nodes.size();
     if (n == 0) return;
 
-    float radius = graphRadius;
-    if (n >= 7) radius -= 40.0f;
-    if (n >= 8) radius -= 20.0f;
-
+    float radius = graphRadius - ((n >= 7) ? 40.0f : 0.0f) - ((n >= 8) ? 20.0f : 0.0f);
     for (int i = 0; i < n; i++)
     {
         float angle = 2.0f * PI * i / n;
@@ -58,144 +74,99 @@ void DIJKSTRA::calculateNodePositions()
     }
 
     std::vector<Vector2> disp(n);
-    float area = radius * radius * 4.0f;
-    float k = sqrtf(area / n) * 1.5;
+    float k = sqrtf(radius * radius * 4.0f / n) * 1.5f;
     float temperature = radius * 0.8f;
-    int iterations = 200;
-
-    for (int iter = 0; iter < iterations; iter++)
+    for (int iter = 0; iter < 200; iter++)
     {
         std::fill(disp.begin(), disp.end(), Vector2{0.0f, 0.0f});
-
         for (int i = 0; i < n; i++)
             for (int j = i + 1; j < n; j++)
             {
                 Vector2 delta = {nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y};
                 float dist = sqrtf(delta.x * delta.x + delta.y * delta.y) + 0.01f;
-                float force = k * k / dist;
                 float len = sqrtf(delta.x * delta.x + delta.y * delta.y);
                 Vector2 dir = {delta.x / len, delta.y / len};
-                disp[i].x += dir.x * force;
-                disp[i].y += dir.y * force;
-                disp[j].x -= dir.x * force;
-                disp[j].y -= dir.y * force;
+                float force = k * k / dist;
+                disp[i].x += dir.x * force; disp[i].y += dir.y * force;
+                disp[j].x -= dir.x * force; disp[j].y -= dir.y * force;
             }
 
         for (const Edge &edge : edges)
         {
             Vector2 delta = {nodes[edge.u].x - nodes[edge.v].x, nodes[edge.u].y - nodes[edge.v].y};
             float dist = sqrtf(delta.x * delta.x + delta.y * delta.y) + 0.01f;
-            float force = dist * dist / k;
             float len = sqrtf(delta.x * delta.x + delta.y * delta.y);
             Vector2 dir = {delta.x / len, delta.y / len};
-            disp[edge.u].x -= dir.x * force;
-            disp[edge.u].y -= dir.y * force;
-            disp[edge.v].x += dir.x * force;
-            disp[edge.v].y += dir.y * force;
+            float force = dist * dist / k;
+            disp[edge.u].x -= dir.x * force; disp[edge.u].y -= dir.y * force;
+            disp[edge.v].x += dir.x * force; disp[edge.v].y += dir.y * force;
         }
 
         for (int i = 0; i < n; i++)
         {
             Vector2 centerForce = {graphCenterX - nodes[i].x, graphCenterY - nodes[i].y};
-            disp[i].x += centerForce.x * 0.01f;
-            disp[i].y += centerForce.y * 0.01f;
+            disp[i].x += centerForce.x * 0.01f; disp[i].y += centerForce.y * 0.01f;
 
             float dispLen = sqrtf(disp[i].x * disp[i].x + disp[i].y * disp[i].y);
             if (dispLen > temperature)
             {
                 float scale = temperature / dispLen;
-                disp[i].x *= scale;
-                disp[i].y *= scale;
+                disp[i].x *= scale; disp[i].y *= scale;
             }
 
-            nodes[i].x += disp[i].x;
-            nodes[i].y += disp[i].y;
-
-            nodes[i].x = Clamp(nodes[i].x, graphCenterX - radius, graphCenterX + radius);
-            nodes[i].y = Clamp(nodes[i].y, graphCenterY - radius, graphCenterY + radius);
+            nodes[i].x = Clamp(nodes[i].x + disp[i].x, graphCenterX - radius, graphCenterX + radius);
+            nodes[i].y = Clamp(nodes[i].y + disp[i].y, graphCenterY - radius, graphCenterY + radius);
         }
-
         temperature *= 0.95f;
     }
 }
 
-int DIJKSTRA::findSet(int v)
+void DIJKSTRA::sync()
 {
-    if (v < 0 || v >= (int)parent.size()) return v;
-    if (parent[v] == v) return v;
-    return parent[v] = findSet(parent[v]);
-}
+    for (auto &edge : edges) edge.state = 0;
+    for (int node = 0; node < (int)predecessor.size(); node++)
+        if (predecessor[node] >= 0)
+            for (auto &edge : edges)
+                if (sameEdge(edge, node, predecessor[node]))
+                {
+                    edge.state = 2;
+                    break;
+                }
 
-void DIJKSTRA::unionSets(int a, int b)
-{
-    a = findSet(a);
-    b = findSet(b);
-    if (a == b) return;
-    if (rank[a] < rank[b]) std::swap(a, b);
-    parent[b] = a;
-    if (rank[a] == rank[b]) rank[a]++;
-}
-
-void DIJKSTRA::rebuildSortedEdges()
-{
-    sortedEdgeIds.resize(edges.size());
-    std::iota(sortedEdgeIds.begin(), sortedEdgeIds.end(), 0);
-
-    std::sort(sortedEdgeIds.begin(), sortedEdgeIds.end(), [this](int a, int b)
-    {
-        if (edges[a].weight != edges[b].weight) return edges[a].weight < edges[b].weight;
-        if (edges[a].u != edges[b].u) return edges[a].u < edges[b].u;
-        return edges[a].v < edges[b].v;
-    });
+    if (selectedEdge >= 0 && selectedEdge < (int)edges.size()) edges[selectedEdge].state = 1;
 }
 
 void DIJKSTRA::resetDistances()
 {
-    distances.assign(nodes.size(), std::numeric_limits<int>::max());
-    if (sourceNode >= 0 && sourceNode < (int)nodes.size())
-    {
-        distances[sourceNode] = 0;
-        statusText = TextFormat("Source node: %d", nodes[sourceNode].label);
-    }
-    else statusText = "Click a node to choose\nthe source.";
+    distances.assign(nodes.size(), INF);
+    predecessor.assign(nodes.size(), -1);
+    finalized.assign(nodes.size(), false);
+    pendingEdges.clear();
+    currentEdge = selectedEdge = activeNode = -1;
+    sync();
+    statusText = (sourceNode >= 0 && sourceNode < (int)nodes.size())
+        ? (distances[sourceNode] = 0, TextFormat("Source node: %d", nodes[sourceNode].label))
+        : "Click a node to choose\nthe source.";
 }
 
 void DIJKSTRA::randomize()
 {
     clear();
-
-    int nodeCount = GetRandomValue(5, 8);
+    int nodeCount = GetRandomValue(5, 8), nextEdgeId = 0;
     nodes.reserve(nodeCount);
-    for (int i = 0; i < nodeCount; i++)
-        nodes.push_back(Node(i, i + 1));
-
-    int nextEdgeId = 0;
+    for (int i = 0; i < nodeCount; i++) nodes.push_back(Node(i, i + 1));
     for (int i = 1; i < nodeCount; i++)
-    {
-        int j = GetRandomValue(0, i - 1);
-        edges.push_back({ nextEdgeId++, j, i, GetRandomValue(1, 99), 0 });
-    }
+        edges.push_back({ nextEdgeId++, GetRandomValue(0, i - 1), i, GetRandomValue(1, 99), 0 });
 
     for (int i = 0; i < nodeCount; i++)
         for (int j = i + 1; j < nodeCount; j++)
         {
             bool exists = false;
-            for (const auto &e : edges)
-                if ((e.u == i && e.v == j) || (e.u == j && e.v == i))
-                {
-                    exists = true;
-                    break;
-                }
-            if (!exists && GetRandomValue(0, 1))
-                edges.push_back({ nextEdgeId++, i, j, GetRandomValue(1, 99), 0 });
+            for (const auto &edge : edges) if (sameEdge(edge, i, j)) { exists = true; break; }
+            if (!exists && GetRandomValue(0, 1)) edges.push_back({ nextEdgeId++, i, j, GetRandomValue(1, 99), 0 });
         }
 
     calculateNodePositions();
-    rebuildSortedEdges();
-    parent.resize(nodeCount);
-    std::fill(parent.begin(), parent.end(), 0);
-    std::iota(parent.begin(), parent.end(), 0);
-    rank.assign(nodeCount, 0);
     resetDistances();
 }
 
@@ -203,18 +174,14 @@ bool DIJKSTRA::manualUpload(const std::string &input)
 {
     std::istringstream iss(input);
     std::vector<std::tuple<int, int, int>> parsedEdges;
-    int maxNode = 0;
+    int maxNode = 0, u, v, w;
 
-    int u, v, w;
     while (iss >> u >> v >> w)
     {
-        if (u == v || w < 1) continue;
-        if (u < 1 || v < 1) continue;
+        if (u == v || w < 1 || u < 1 || v < 1) continue;
         parsedEdges.emplace_back(u, v, w);
-        if (u > maxNode) maxNode = u;
-        if (v > maxNode) maxNode = v;
+        maxNode = std::max(maxNode, std::max(u, v));
     }
-
     if (parsedEdges.empty()) return false;
 
     clear();
@@ -224,110 +191,106 @@ bool DIJKSTRA::manualUpload(const std::string &input)
     int nextId = 0;
     for (const auto &edgeData : parsedEdges)
     {
-        int lu = std::get<0>(edgeData);
-        int lv = std::get<1>(edgeData);
-        int ww = std::get<2>(edgeData);
-        int uu = lu - 1;
-        int vv = lv - 1;
+        int uu = std::get<0>(edgeData) - 1, vv = std::get<1>(edgeData) - 1, ww = std::get<2>(edgeData);
         bool dup = false;
-        for (auto &e : edges) if ((e.u == uu && e.v == vv) || (e.u == vv && e.v == uu)) { dup = true; break; }
+        for (const auto &edge : edges) if (sameEdge(edge, uu, vv)) { dup = true; break; }
         if (!dup) edges.push_back({ nextId++, uu, vv, ww, 0 });
     }
-
     if (edges.empty()) return false;
 
     calculateNodePositions();
-    rebuildSortedEdges();
-    parent.resize(nodes.size());
-    std::iota(parent.begin(), parent.end(), 0);
-    rank.assign(nodes.size(), 0);
     resetDistances();
-
     return true;
 }
 
 void DIJKSTRA::startDijkstraAnimation()
 {
     if (nodes.empty() || edges.empty()) return;
-    if (sourceNode < 0 || sourceNode >= (int)nodes.size())
-    {
-        statusText = "Choose a source node first.";
-        return;
-    }
-
     history.clear();
-    for (Edge &edge : edges)
-        edge.state = 0;
-
-    parent.resize(nodes.size());
-    rank.assign(nodes.size(), 0);
-    for (int i = 0; i < (int)nodes.size(); i++)
-        parent[i] = i;
-
-    currentEdge = 0;
-    selectedEdge = -1;
-    edgesAccepted = 0;
-    totalWeight = 0;
+    resetDistances();
     animMode = 1;
     dijkstraCompleted = false;
-    resetDistances();
-
-    if (mode == 1)
-        animSpeed = 999999.0f;
-    else
-        animSpeed = 0.8f;
+    changeSpeed(*this);
 }
 
 void DIJKSTRA::updateAnimation()
 {
     if (animMode == 0 || nodes.empty()) return;
-
     animTimer += GetFrameTime();
     if (animTimer < animSpeed) return;
 
     captureSnapshot();
     animTimer = 0.0f;
-
-    if (mode == 0) animSpeed = 0.8f;
-    else animSpeed = 999999.0f;
+    changeSpeed(*this);
 
     if (animMode == 1)
     {
-        selectedEdge = sortedEdgeIds[currentEdge];
-        edges[selectedEdge].state = 1;
-        const Edge &edge = edges[selectedEdge];
-        statusText = TextFormat("Check %d-%d (%d).", nodes[edge.u].label, nodes[edge.v].label, edge.weight);
-        animMode = 2;
-    }
-    else if (animMode == 2)
-    {
-        auto &e = edges[selectedEdge];
-        int ur = findSet(e.u), vr = findSet(e.v);
-        if (ur != vr)
-        {
-            e.state = 2;
-            unionSets(ur, vr);
-            edgesAccepted++;
-            totalWeight += e.weight;
-            statusText = TextFormat("Accept %d-%d.", nodes[e.u].label, nodes[e.v].label);
-        }
-        else
-        {
-            e.state = 3;
-            statusText = TextFormat("Reject %d-%d. Cycle.", nodes[e.u].label, nodes[e.v].label);
-        }
-
-        currentEdge++;
-        selectedEdge = -1;
-
-        if (edgesAccepted >= (int)nodes.size() - 1 || currentEdge >= (int)sortedEdgeIds.size())
+        activeNode = findNext(*this);
+        if (activeNode < 0)
         {
             animMode = 0;
             dijkstraCompleted = true;
-            for (auto &e : edges) if (e.state == 0) e.state = 3;
-            statusText = TextFormat("DIJKSTRA complete.");
-        } else animMode = 1;
+            selectedEdge = activeNode = -1;
+            sync();
+            statusText = "Dijkstra complete.";
+            return;
+        }
+
+        pendingEdges.clear();
+        for (int i = 0; i < (int)edges.size(); i++)
+            if (edges[i].u == activeNode || edges[i].v == activeNode)
+                pendingEdges.push_back(i);
+                
+        currentEdge = 0;
+        selectedEdge = -1;
+        sync();
+        statusText = TextFormat("Select node %d.", nodes[activeNode].label);
+        animMode = 2;
+        return;
     }
+
+    if (animMode == 2)
+    {
+        if (currentEdge >= (int)pendingEdges.size())
+        {
+            finalized[activeNode] = true;
+            selectedEdge = -1;
+            sync();
+            statusText = TextFormat("Finalize node %d.", nodes[activeNode].label);
+            animMode = 1;
+            activeNode = -1;
+            return;
+        }
+
+        selectedEdge = pendingEdges[currentEdge];
+        sync();
+        const Edge &edge = edges[selectedEdge];
+        int neighbor = (edge.u == activeNode) ? edge.v : edge.u;
+        statusText = TextFormat("Check %d -> %d (%d).", nodes[activeNode].label, nodes[neighbor].label, edge.weight);
+        animMode = 3;
+        return;
+    }
+
+    const Edge &edge = edges[selectedEdge];
+    int neighbor = (edge.u == activeNode) ? edge.v : edge.u;
+    if (finalized[neighbor]) statusText = TextFormat("Skip %d. Already finalized.", nodes[neighbor].label);
+    else if (distances[activeNode] == INF) statusText = TextFormat("Skip %d. Source is unreachable.", nodes[neighbor].label);
+    else
+    {
+        int candidate = distances[activeNode] + edge.weight;
+        if (candidate < distances[neighbor])
+        {
+            distances[neighbor] = candidate;
+            predecessor[neighbor] = activeNode;
+            statusText = TextFormat("Update dist[%d] = %d.", nodes[neighbor].label, candidate);
+        }
+        else statusText = TextFormat("Keep dist[%d] = %s.", nodes[neighbor].label, DistanceText(distances[neighbor]));
+    }
+
+    currentEdge++;
+    selectedEdge = -1;
+    sync();
+    animMode = 2;
 }
 
 void DIJKSTRA::captureSnapshot()
@@ -335,17 +298,15 @@ void DIJKSTRA::captureSnapshot()
     Snapshot sn;
     sn.currentEdge = currentEdge;
     sn.selectedEdge = selectedEdge;
+    sn.activeNode = activeNode;
     sn.animMode = animMode;
-    sn.edgesAccepted = edgesAccepted;
-    sn.totalWeight = totalWeight;
     sn.dijkstraCompleted = dijkstraCompleted;
     sn.statusText = statusText;
-    sn.parent = parent;
-    sn.rank = rank;
-
-    for (const Edge &edge : edges)
-        sn.edgeStates.push_back({ edge.id, edge.state });
-
+    sn.distances = distances;
+    sn.predecessor = predecessor;
+    sn.finalized = finalized;
+    sn.pendingEdges = pendingEdges;
+    for (const Edge &edge : edges) sn.edgeStates.push_back({ edge.id, edge.state });
     history.push_back(sn);
 }
 
@@ -353,45 +314,31 @@ void DIJKSTRA::restoreSnapshot(const Snapshot &sn)
 {
     currentEdge = sn.currentEdge;
     selectedEdge = sn.selectedEdge;
+    activeNode = sn.activeNode;
     animMode = sn.animMode;
-    edgesAccepted = sn.edgesAccepted;
-    totalWeight = sn.totalWeight;
     dijkstraCompleted = sn.dijkstraCompleted;
     statusText = sn.statusText;
-    parent = sn.parent;
-    rank = sn.rank;
-
+    distances = sn.distances;
+    predecessor = sn.predecessor;
+    finalized = sn.finalized;
+    pendingEdges = sn.pendingEdges;
     for (const Snapshot::EdgeState &edgeState : sn.edgeStates)
-    {
         if (edgeState.id >= 0 && edgeState.id < (int)edges.size())
             edges[edgeState.id].state = edgeState.state;
-    }
-
-    if (mode == 1)
-        animSpeed = 999999.0f;
-    else
-        animSpeed = 0.8f;
+    changeSpeed(*this);
 }
 
 static void DrawForwardButton(float x, float y, DIJKSTRA &dijkstra)
 {
-    GuiSetState(STATE_NORMAL);
-    if (dijkstra.mode != 1 || dijkstra.animMode == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >"))
-        dijkstra.animSpeed = 0.0f;
+    GuiSetState((dijkstra.mode == 1 && dijkstra.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) dijkstra.animSpeed = 0.0f;
     GuiSetState(STATE_NORMAL);
 }
 
 static void DrawBackwardButton(float x, float y, DIJKSTRA &dijkstra)
 {
-    if (dijkstra.mode != 1 || dijkstra.history.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward"))
-    {
-        DIJKSTRA::Snapshot lastState = dijkstra.history.back();
-        dijkstra.history.pop_back();
-        dijkstra.restoreSnapshot(lastState);
-        if (dijkstra.mode == 1) dijkstra.animSpeed = 999999.0f;
-    }
+    GuiSetState((dijkstra.mode == 1 && !dijkstra.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) RestorePreviousStep(dijkstra);
     GuiSetState(STATE_NORMAL);
 }
 
@@ -400,12 +347,7 @@ static void DrawToggle(float x, float y, DIJKSTRA &dijkstra)
     int oldMode = dijkstra.mode;
     makeGuiLabel(x + 45, y - 30, "Animation Mode:");
     GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &dijkstra.mode);
-
-    if (dijkstra.mode != oldMode)
-    {
-        if (dijkstra.mode == 1) dijkstra.animSpeed = 999999.0f;
-        else dijkstra.animSpeed = 0.8f;
-    }
+    if (dijkstra.mode != oldMode) changeSpeed(dijkstra);
 }
 
 static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, bool &editMode)
@@ -413,18 +355,9 @@ static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, 
     static Vector2 inputScroll = { 0.0f, 0.0f };
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
     makeGuiLabel(x, y, "Initialize Graph");
-
-    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
-        dijkstra.randomize();
-
-    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
-    {
-        // Upload support can be added later.
-    }
-
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
-        dijkstra.manualUpload(inputBuf);
-
+    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random")) dijkstra.randomize();
+    GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload");
+    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual")) dijkstra.manualUpload(inputBuf);
     makeGuiLabel(x, y + 145, "Edges (u, v w):");
     DrawMultiLineEditor((Rectangle){ x, y + 175, 300, 110 }, inputBuf, 2048, editMode, inputScroll);
 }
@@ -433,12 +366,10 @@ static void DrawOperationPanel(float x, float y, DIJKSTRA &dijkstra)
 {
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 1, BLACK);
     makeGuiLabel(x, y, "Operations");
-
     int curState = GuiGetState();
-    if (dijkstra.nodes.empty() || dijkstra.edges.empty()) GuiSetState(STATE_DISABLED);
+    if (dijkstra.nodes.empty() || dijkstra.edges.empty() || dijkstra.sourceNode < 0) GuiSetState(STATE_DISABLED);
     if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Start Dijkstra")) dijkstra.startDijkstraAnimation();
     GuiSetState(curState);
-
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear")) dijkstra.clear();
 }
 
@@ -447,8 +378,10 @@ static void DrawStatusPanel(float x, float y, DIJKSTRA &dijkstra)
     const char *sourceText = (dijkstra.sourceNode >= 0 && dijkstra.sourceNode < (int)dijkstra.nodes.size())
         ? TextFormat("Selected source: %d", dijkstra.nodes[dijkstra.sourceNode].label)
         : "Selected source: none";
-    DrawText(sourceText, (int)x, (int)y, 20, RED);
+    DrawText(sourceText, (int)x, (int)y, 20, GREEN);
     DrawText(dijkstra.statusText.c_str(), (int)x, (int)(y + 25), 20, BLACK);
+    if (dijkstra.activeNode >= 0 && dijkstra.activeNode < (int)dijkstra.nodes.size())
+        DrawText(TextFormat("Current node: %d", dijkstra.nodes[dijkstra.activeNode].label), (int)x, (int)(y + 50), 20, ORANGE);
 }
 
 void DIJKSTRA::drawGraph()
@@ -477,8 +410,7 @@ void DIJKSTRA::drawGraph()
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && draggingNode >= 0)
     {
-        float dx = mouse.x - dragStartMouse.x;
-        float dy = mouse.y - dragStartMouse.y;
+        float dx = mouse.x - dragStartMouse.x, dy = mouse.y - dragStartMouse.y;
         if (dx * dx + dy * dy <= 36.0f && animMode == 0)
         {
             sourceNode = draggingNode;
@@ -487,44 +419,37 @@ void DIJKSTRA::drawGraph()
         draggingNode = -1;
     }
 
-    for (auto &e : edges)
+    for (const auto &edge : edges)
     {
-        if (e.u < 0 || e.v >= (int)nodes.size()) continue;
-        Vector2 a = {nodes[e.u].x, nodes[e.u].y}, b = {nodes[e.v].x, nodes[e.v].y};
-        Color c = BLACK;
-        float th = 2.5f;
-        if (e.state == 1)
-        {
-            c = ORANGE;
-            th = 4.0f;
-        }
-        DrawLineEx(a, b, th, c);
+        if (edge.u < 0 || edge.v >= (int)nodes.size()) continue;
+        Vector2 a = {nodes[edge.u].x, nodes[edge.u].y}, b = {nodes[edge.v].x, nodes[edge.v].y};
+        Color color = (edge.state == 1) ? ORANGE : (edge.state == 2) ? BLUE : DARKGRAY;
+        float thickness = (edge.state == 0) ? 2.5f : 4.0f;
+        DrawLineEx(a, b, thickness, color);
 
         Vector2 mid = {(a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f};
         Vector2 diff = {b.x - a.x, b.y - a.y};
         float len = sqrtf(diff.x * diff.x + diff.y * diff.y) + 0.01f;
         Vector2 perp = {-diff.y / len, diff.x / len};
         Vector2 textPos = {mid.x + perp.x * 18.0f, mid.y + perp.y * 18.0f};
-        DrawText(TextFormat("%d", e.weight), textPos.x - 8, textPos.y - 10, 20, BLACK);
+        DrawText(TextFormat("%d", edge.weight), textPos.x - 8, textPos.y - 10, 20, BLACK);
     }
 
     for (int i = 0; i < (int)nodes.size(); i++)
     {
-        auto &n = nodes[i];
-        Vector2 p = {n.x, n.y};
-        Color fillColor = (i == sourceNode) ? RED : WHITE;
+        Vector2 p = {nodes[i].x, nodes[i].y};
+        Color fillColor = WHITE, textColor = BLACK;
+        if (finalized.size() == nodes.size() && finalized[i]) { fillColor = DARKGREEN; textColor = WHITE; }
+        else if (i == activeNode) fillColor = ORANGE;
+        else if (i == sourceNode) { fillColor = RED; textColor = WHITE; }
+
         DrawCircleV(p, 30, fillColor);
         DrawRing(p, 26, 30, 0.0f, 360.0f, 40, BLACK);
+        const char *nodeText = TextFormat("%d", nodes[i].label);
+        DrawText(nodeText, p.x - MeasureText(nodeText, 20) / 2, p.y - 10, 20, textColor);
 
-        const char* nodeText = TextFormat("%d", n.label);
-        int nodeTextWidth = MeasureText(nodeText, 20);
-        DrawText(nodeText, p.x - nodeTextWidth/2, p.y - 10, 20, (i == sourceNode) ? WHITE : BLACK);
-
-        const char *distText = (i < (int)distances.size() && distances[i] != std::numeric_limits<int>::max())
-            ? TextFormat("%d", distances[i])
-            : "INF";
-        int distTextWidth = MeasureText(distText, 18);
-        DrawText(distText, p.x - distTextWidth/2, p.y - 52, 18, DARKBLUE);
+        const char *distText = (i < (int)distances.size()) ? DistanceText(distances[i]) : "INF";
+        DrawText(distText, p.x - MeasureText(distText, 18) / 2, p.y - 52, 18, DARKBLUE);
     }
 }
 
@@ -532,22 +457,19 @@ void runDijkstra(AppState &currentState)
 {
     static char inputBuffer[2048] = "1 2 10\n2 3 5\n1 3 15";
     static bool editMode = false;
-    const float statusX = 1350.0f;
-    const float statusY = 40.0f;
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
     myDijkstra.drawGraph();
 
-    float X = 60, Y = 150;
+    float x = 60.0f, y = 150.0f;
     DrawForwardButton(875, 800, myDijkstra);
     DrawBackwardButton(725, 800, myDijkstra);
 
     bool isBusy = (myDijkstra.animMode != 0);
     if (isBusy) GuiSetState(STATE_DISABLED);
-    DrawToggle(X, Y, myDijkstra);
-    DrawInitPanel(X, Y + 125, myDijkstra, inputBuffer, editMode);
-    DrawOperationPanel(X, Y + 500, myDijkstra);
-    DrawStatusPanel(statusX, statusY, myDijkstra);
-    
+    DrawToggle(x, y, myDijkstra);
+    DrawInitPanel(x, y + 125, myDijkstra, inputBuffer, editMode);
+    DrawOperationPanel(x, y + 500, myDijkstra);
+    DrawStatusPanel(1350.0f, 40.0f, myDijkstra);
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }
