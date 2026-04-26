@@ -1,3 +1,4 @@
+#include "common.h"
 #include "raylib.h"
 #include "raygui.h"
 #include <cstring>
