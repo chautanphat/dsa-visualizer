@@ -387,7 +387,7 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
 {
     static Vector2 inputScroll = { 0.0f, 0.0f };
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
-    makeGuiLabel(x, y, "Initialize MST Graph");
+    makeGuiLabel(x, y, "Initialize Graph");
 
     if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
         mst.randomize();
