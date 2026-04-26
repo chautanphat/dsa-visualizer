@@ -462,8 +462,8 @@ void MST::drawGraph()
         unsigned char al = 255;
 
         if (e.state == 0) { if (animMode || mstCompleted) { c = DARKGRAY; al = 100; } }
-        else if (e.state == 1) { c = ORANGE; th = 4.0f; }
-        else if (e.state == 2) { c = GREEN; th = 4.0f; }
+        else if (e.state == 1) { c = ORANGE; th = 3.0f; }
+        else if (e.state == 2) { c = GREEN; th = 3.0f; }
         else if (e.state == 3) { c = DARKGRAY; al = 100; }
 
         c.a = al;
