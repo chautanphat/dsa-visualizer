@@ -231,13 +231,11 @@ void MST::startMSTAnimation()
     if (nodes.empty() || edges.empty()) return;
 
     history.clear();
-    for (Edge &edge : edges)
-        edge.state = 0;
+    for (Edge &edge : edges) edge.state = 0;
 
     parent.resize(nodes.size());
     rank.assign(nodes.size(), 0);
-    for (int i = 0; i < (int)nodes.size(); i++)
-        parent[i] = i;
+    for (int i = 0; i < (int)nodes.size(); i++) parent[i] = i;
 
     currentEdge = 0;
     selectedEdge = -1;
@@ -247,10 +245,8 @@ void MST::startMSTAnimation()
     mstCompleted = false;
     statusText = "Ready.";
 
-    if (mode == 1)
-        animSpeed = 999999.0f;
-    else
-        animSpeed = 0.8f;
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.8f;
 }
 
 void MST::updateAnimation()
@@ -411,12 +407,10 @@ static void DrawOperationPanel(float x, float y, MST &mst)
 
     int curState = GuiGetState();
     if (mst.nodes.empty() || mst.edges.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Generate MST"))
-        mst.startMSTAnimation();
+    if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Generate MST")) mst.startMSTAnimation();
     GuiSetState(curState);
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear"))
-        mst.clear();
+    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear")) mst.clear();
 }
 
 static void DrawStatusPanel(float x, float y, MST &mst)
@@ -489,7 +483,7 @@ void runMST(AppState &currentState)
 {
     static char inputBuffer[2048] = "1 2 10\n2 3 5\n1 3 15";
     static bool editMode = false;
-    const float statusX = 1400.0f;
+    const float statusX = 1350.0f;
     const float statusY = 40.0f;
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
