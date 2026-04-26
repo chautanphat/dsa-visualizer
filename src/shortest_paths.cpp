@@ -9,6 +9,7 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 static const float graphCenterX = 900.0f;
 static const float graphCenterY = 420.0f;
@@ -23,6 +24,7 @@ void DIJKSTRA::clear()
     nodes.clear();
     edges.clear();
     sortedEdgeIds.clear();
+    distances.clear();
     parent.clear();
     rank.clear();
     history.clear();
@@ -34,6 +36,8 @@ void DIJKSTRA::clear()
     animTimer = 0.0f;
     animSpeed = 0.8f;
     dijkstraCompleted = false;
+    sourceNode = -1;
+    draggingNode = -1;
     statusText = "Ready.";
 }
 
@@ -145,6 +149,17 @@ void DIJKSTRA::rebuildSortedEdges()
     });
 }
 
+void DIJKSTRA::resetDistances()
+{
+    distances.assign(nodes.size(), std::numeric_limits<int>::max());
+    if (sourceNode >= 0 && sourceNode < (int)nodes.size())
+    {
+        distances[sourceNode] = 0;
+        statusText = TextFormat("Source node: %d", nodes[sourceNode].label);
+    }
+    else statusText = "Click a node to choose\nthe source.";
+}
+
 void DIJKSTRA::randomize()
 {
     clear();
@@ -181,6 +196,7 @@ void DIJKSTRA::randomize()
     std::fill(parent.begin(), parent.end(), 0);
     std::iota(parent.begin(), parent.end(), 0);
     rank.assign(nodeCount, 0);
+    resetDistances();
 }
 
 bool DIJKSTRA::manualUpload(const std::string &input)
@@ -206,8 +222,11 @@ bool DIJKSTRA::manualUpload(const std::string &input)
     for (int i = 0; i < maxNode; i++) nodes[i] = Node(i, i + 1);
 
     int nextId = 0;
-    for (auto &[lu, lv, ww] : parsedEdges)
+    for (const auto &edgeData : parsedEdges)
     {
+        int lu = std::get<0>(edgeData);
+        int lv = std::get<1>(edgeData);
+        int ww = std::get<2>(edgeData);
         int uu = lu - 1;
         int vv = lv - 1;
         bool dup = false;
@@ -222,6 +241,7 @@ bool DIJKSTRA::manualUpload(const std::string &input)
     parent.resize(nodes.size());
     std::iota(parent.begin(), parent.end(), 0);
     rank.assign(nodes.size(), 0);
+    resetDistances();
 
     return true;
 }
@@ -229,6 +249,11 @@ bool DIJKSTRA::manualUpload(const std::string &input)
 void DIJKSTRA::startDijkstraAnimation()
 {
     if (nodes.empty() || edges.empty()) return;
+    if (sourceNode < 0 || sourceNode >= (int)nodes.size())
+    {
+        statusText = "Choose a source node first.";
+        return;
+    }
 
     history.clear();
     for (Edge &edge : edges)
@@ -245,7 +270,7 @@ void DIJKSTRA::startDijkstraAnimation()
     totalWeight = 0;
     animMode = 1;
     dijkstraCompleted = false;
-    statusText = "Ready.";
+    resetDistances();
 
     if (mode == 1)
         animSpeed = 999999.0f;
@@ -411,18 +436,19 @@ static void DrawOperationPanel(float x, float y, DIJKSTRA &dijkstra)
 
     int curState = GuiGetState();
     if (dijkstra.nodes.empty() || dijkstra.edges.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Generate DIJKSTRA"))
-        dijkstra.startDijkstraAnimation();
+    if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Start Dijkstra")) dijkstra.startDijkstraAnimation();
     GuiSetState(curState);
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear"))
-        dijkstra.clear();
+    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear")) dijkstra.clear();
 }
 
 static void DrawStatusPanel(float x, float y, DIJKSTRA &dijkstra)
 {
-    DrawText(dijkstra.statusText.c_str(), (int)x, (int)y, 20, BLACK);
-    DrawText(TextFormat("Total sum: %d", dijkstra.totalWeight), (int)x, (int)(y + 25), 20, GREEN);
+    const char *sourceText = (dijkstra.sourceNode >= 0 && dijkstra.sourceNode < (int)dijkstra.nodes.size())
+        ? TextFormat("Selected source: %d", dijkstra.nodes[dijkstra.sourceNode].label)
+        : "Selected source: none";
+    DrawText(sourceText, (int)x, (int)y, 20, RED);
+    DrawText(dijkstra.statusText.c_str(), (int)x, (int)(y + 25), 20, BLACK);
 }
 
 void DIJKSTRA::drawGraph()
@@ -438,6 +464,7 @@ void DIJKSTRA::drawGraph()
             {
                 draggingNode = i;
                 dragOffset = {nodes[i].x - mouse.x, nodes[i].y - mouse.y};
+                dragStartMouse = mouse;
                 break;
             }
         }
@@ -448,25 +475,29 @@ void DIJKSTRA::drawGraph()
         nodes[draggingNode].y = mouse.y + dragOffset.y;
     }
 
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) draggingNode = -1;
-
-    int ha = -1, hb = -1;
-    for (auto &e : edges) if (e.state == 1) { ha = e.u; hb = e.v; break; }
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && draggingNode >= 0)
+    {
+        float dx = mouse.x - dragStartMouse.x;
+        float dy = mouse.y - dragStartMouse.y;
+        if (dx * dx + dy * dy <= 36.0f && animMode == 0)
+        {
+            sourceNode = draggingNode;
+            resetDistances();
+        }
+        draggingNode = -1;
+    }
 
     for (auto &e : edges)
     {
         if (e.u < 0 || e.v >= (int)nodes.size()) continue;
         Vector2 a = {nodes[e.u].x, nodes[e.u].y}, b = {nodes[e.v].x, nodes[e.v].y};
         Color c = BLACK;
-        float th = 2.0f;
-        unsigned char al = 255;
-
-        if (e.state == 0) { if (animMode || dijkstraCompleted) { c = DARKGRAY; al = 100; } }
-        else if (e.state == 1) { c = ORANGE; th = 4.0f; }
-        else if (e.state == 2) { c = GREEN; th = 4.0f; }
-        else if (e.state == 3) { c = DARKGRAY; al = 100; }
-
-        c.a = al;
+        float th = 2.5f;
+        if (e.state == 1)
+        {
+            c = ORANGE;
+            th = 4.0f;
+        }
         DrawLineEx(a, b, th, c);
 
         Vector2 mid = {(a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f};
@@ -474,14 +505,26 @@ void DIJKSTRA::drawGraph()
         float len = sqrtf(diff.x * diff.x + diff.y * diff.y) + 0.01f;
         Vector2 perp = {-diff.y / len, diff.x / len};
         Vector2 textPos = {mid.x + perp.x * 18.0f, mid.y + perp.y * 18.0f};
-        DrawText(TextFormat("%d", e.weight), textPos.x - 10, textPos.y - 10, 20, BLACK);
+        DrawText(TextFormat("%d", e.weight), textPos.x - 8, textPos.y - 10, 20, BLACK);
     }
 
-    for (auto &n : nodes)
+    for (int i = 0; i < (int)nodes.size(); i++)
     {
+        auto &n = nodes[i];
         Vector2 p = {n.x, n.y};
-        if (n.id == ha || n.id == hb) DrawCircleV(p, 35, ORANGE);
-        DrawNode(p, n.label, 20, 30, 4);
+        Color fillColor = (i == sourceNode) ? RED : WHITE;
+        DrawCircleV(p, 30, fillColor);
+        DrawRing(p, 26, 30, 0.0f, 360.0f, 40, BLACK);
+
+        const char* nodeText = TextFormat("%d", n.label);
+        int nodeTextWidth = MeasureText(nodeText, 20);
+        DrawText(nodeText, p.x - nodeTextWidth/2, p.y - 10, 20, (i == sourceNode) ? WHITE : BLACK);
+
+        const char *distText = (i < (int)distances.size() && distances[i] != std::numeric_limits<int>::max())
+            ? TextFormat("%d", distances[i])
+            : "INF";
+        int distTextWidth = MeasureText(distText, 18);
+        DrawText(distText, p.x - distTextWidth/2, p.y - 52, 18, DARKBLUE);
     }
 }
 
@@ -489,7 +532,7 @@ void runDijkstra(AppState &currentState)
 {
     static char inputBuffer[2048] = "1 2 10\n2 3 5\n1 3 15";
     static bool editMode = false;
-    const float statusX = 1400.0f;
+    const float statusX = 1350.0f;
     const float statusY = 40.0f;
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));

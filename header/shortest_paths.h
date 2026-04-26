@@ -47,6 +47,7 @@ struct DIJKSTRA
     std::vector<Node> nodes;
     std::vector<Edge> edges;
     std::vector<int> sortedEdgeIds;
+    std::vector<int> distances;
 
     std::vector<int> parent;
     std::vector<int> rank;
@@ -65,6 +66,8 @@ struct DIJKSTRA
 
     int draggingNode = -1;
     Vector2 dragOffset = { 0.0f, 0.0f };
+    Vector2 dragStartMouse = { 0.0f, 0.0f };
+    int sourceNode = -1;
 
     int mode = 0;
 
@@ -84,6 +87,7 @@ struct DIJKSTRA
 
     void calculateNodePositions();
     void rebuildSortedEdges();
+    void resetDistances();
     int findSet(int v);
     void unionSets(int a, int b);
 };
