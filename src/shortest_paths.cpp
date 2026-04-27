@@ -504,7 +504,7 @@ void runDijkstra(AppState &currentState)
     DrawStatusPanel(1350.0f, 40.0f, myDijkstra);
     DrawCodePanel(
         dijkstraCodePanel,
-        { (float)GetScreenWidth() - 560.0f, (float)GetScreenHeight() - 290.0f, 520.0f, 250.0f },
+        { (float)GetScreenWidth() - 540.0f, (float)GetScreenHeight() - 290.0f, 520.0f, 250.0f },
         "Dijkstra Pseudocode",
         dijkstraCodeLines,
         myDijkstra.activeLine
