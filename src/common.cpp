@@ -2,6 +2,8 @@
 #include "raylib.h"
 #include "raygui.h"
 #include <cstring>
+#include <string>
+#include <vector>
 
 static int editorCursorIndex = 0;
 
@@ -288,6 +290,74 @@ void DrawMultiLineEditor(Rectangle bounds, char *buffer, int maxSize, bool &edit
         int lastLineStart = GetLineStart(buffer, editorCursorIndex);
         int cursorOffset = MeasureText(TextFormat("%.*s", editorCursorIndex - lastLineStart, buffer + lastLineStart), 20);
         DrawLine((int)(drawX + cursorOffset), (int)(drawY + cursorLine * lineHeight), (int)(drawX + cursorOffset), (int)(drawY + cursorLine * lineHeight + 20), BLACK);
+    }
+
+    EndScissorMode();
+}
+
+void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title, const std::vector<std::string> &lines, int activeLine)
+{
+    panel.bounds = bounds;
+
+    bool contentChanged = (panel.title != title) || (panel.lines != lines);
+    if (contentChanged)
+    {
+        panel.title = title;
+        panel.lines = lines;
+        panel.scroll = { 0.0f, 0.0f };
+        panel.lastActiveLine = -1;
+    }
+    panel.activeLine = activeLine;
+
+    const float titleHeight = 38.0f;
+    const float visibleHeight = panel.bounds.height - titleHeight - 12.0f;
+    const float contentHeight = (float)(panel.lines.size() * panel.lineHeight + panel.padding * 2.0f);
+    const float minScrollY = std::min(0.0f, visibleHeight - contentHeight);
+    Rectangle content = { 0.0f, 0.0f, panel.bounds.width - 20.0f, contentHeight };
+    Rectangle view = { 0 };
+    Rectangle body = { panel.bounds.x + 8.0f, panel.bounds.y + titleHeight, panel.bounds.width - 16.0f, panel.bounds.height - titleHeight - 8.0f };
+
+    if (CheckCollisionPointRec(GetMousePosition(), body))
+    {
+        float wheel = GetMouseWheelMove();
+        if (wheel != 0.0f) panel.scroll.y += wheel * 32.0f;
+    }
+
+    bool activeLineChanged = (panel.activeLine != panel.lastActiveLine);
+    if (activeLineChanged && panel.activeLine >= 0 && panel.activeLine < (int)panel.lines.size())
+    {
+        float lineTop = panel.activeLine * panel.lineHeight;
+        float lineBottom = lineTop + panel.lineHeight;
+        float visibleTop = -panel.scroll.y;
+        float visibleBottom = visibleTop + visibleHeight;
+
+        if (lineTop < visibleTop) panel.scroll.y = -lineTop;
+        else if (lineBottom > visibleBottom) panel.scroll.y = -(lineBottom - visibleHeight);
+    }
+
+    if (panel.scroll.y < minScrollY) panel.scroll.y = minScrollY;
+    if (panel.scroll.y > 0.0f) panel.scroll.y = 0.0f;
+    panel.lastActiveLine = panel.activeLine;
+
+    DrawRectangleRounded(panel.bounds, 0.06f, 8, Fade(RAYWHITE, 0.96f));
+    DrawRectangleRoundedLinesEx(panel.bounds, 0.06f, 8, 2.0f, LIGHTGRAY);
+    DrawText(panel.title.c_str(), (int)(panel.bounds.x + 14.0f), (int)(panel.bounds.y + 10.0f), 22, DARKBLUE);
+
+    GuiScrollPanel(body, NULL, content, &panel.scroll, &view);
+    BeginScissorMode((int)view.x, (int)view.y, (int)view.width, (int)view.height);
+
+    float drawX = body.x + panel.padding + panel.scroll.x;
+    float drawY = body.y + panel.padding + panel.scroll.y;
+    int lineNumberWidth = MeasureText("00", panel.fontSize);
+
+    for (int i = 0; i < (int)panel.lines.size(); i++)
+    {
+        float y = drawY + i * panel.lineHeight;
+        if (i == panel.activeLine)
+            DrawRectangleRounded({ drawX - 6.0f, y - 2.0f, body.width - 24.0f, (float)panel.lineHeight }, 0.18f, 6, Fade(ORANGE, 0.28f));
+
+        DrawText(TextFormat("%02d", i + 1), (int)drawX, (int)y + 3, panel.fontSize - 2, GRAY);
+        DrawText(panel.lines[i].c_str(), (int)(drawX + lineNumberWidth + 18.0f), (int)y + 3, panel.fontSize, (i == panel.activeLine) ? MAROON : BLACK);
     }
 
     EndScissorMode();
