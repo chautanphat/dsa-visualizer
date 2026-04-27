@@ -309,11 +309,20 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     }
     panel.activeLine = activeLine;
 
+    int lineNumberWidth = MeasureText("00", panel.fontSize);
+    float maxTextWidth = 0.0f;
+    for (const std::string &line : panel.lines)
+    {
+        float width = (float)MeasureText(line.c_str(), panel.fontSize);
+        if (width > maxTextWidth) maxTextWidth = width;
+    }
+
     const float titleHeight = 38.0f;
     const float visibleHeight = panel.bounds.height - titleHeight - 12.0f;
     const float contentHeight = (float)(panel.lines.size() * panel.lineHeight + panel.padding * 2.0f);
+    const float contentWidth = maxTextWidth + lineNumberWidth + 18.0f + panel.padding * 2.0f;
     const float minScrollY = std::min(0.0f, visibleHeight - contentHeight);
-    Rectangle content = { 0.0f, 0.0f, panel.bounds.width - 20.0f, contentHeight };
+    Rectangle content = { 0.0f, 0.0f, contentWidth, contentHeight };
     Rectangle view = { 0 };
     Rectangle body = { panel.bounds.x + 8.0f, panel.bounds.y + titleHeight, panel.bounds.width - 16.0f, panel.bounds.height - titleHeight - 8.0f };
 
@@ -348,13 +357,12 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
 
     float drawX = body.x + panel.padding + panel.scroll.x;
     float drawY = body.y + panel.padding + panel.scroll.y;
-    int lineNumberWidth = MeasureText("00", panel.fontSize);
 
     for (int i = 0; i < (int)panel.lines.size(); i++)
     {
         float y = drawY + i * panel.lineHeight;
         if (i == panel.activeLine)
-            DrawRectangleRounded({ drawX - 6.0f, y - 2.0f, body.width - 24.0f, (float)panel.lineHeight }, 0.18f, 6, Fade(ORANGE, 0.28f));
+            DrawRectangleRounded({ drawX - 6.0f, y - 2.0f, std::max(body.width - 24.0f, contentWidth), (float)panel.lineHeight }, 0.18f, 6, Fade(ORANGE, 0.28f));
 
         DrawText(TextFormat("%02d", i + 1), (int)drawX, (int)y + 3, panel.fontSize - 2, GRAY);
         DrawText(panel.lines[i].c_str(), (int)(drawX + lineNumberWidth + 18.0f), (int)y + 3, panel.fontSize, (i == panel.activeLine) ? MAROON : BLACK);
