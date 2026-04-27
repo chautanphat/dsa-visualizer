@@ -15,7 +15,7 @@ const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
 
-static AppState currentState = SHORTEST_PATHS;
+static AppState currentState = MENU;
 
 int main()
 {
@@ -56,7 +56,7 @@ int main()
             }
             if (currentState != MENU)
             {
-                if (GuiButton((Rectangle){ 20, 20, 60, 30 }, "Back")) currentState = MENU;
+                if (GuiButton((Rectangle){ 20, 20, 80, 30 }, "#72#Back")) currentState = MENU;
             }
 
         EndDrawing();
