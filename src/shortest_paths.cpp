@@ -498,16 +498,12 @@ void runDijkstra(AppState &currentState)
 
     bool isBusy = (myDijkstra.animMode != 0);
     if (isBusy) GuiSetState(STATE_DISABLED);
+
     DrawToggle(x, y, myDijkstra);
     DrawInitPanel(x, y + 125, myDijkstra, inputBuffer, editMode);
     DrawOperationPanel(x, y + 500, myDijkstra);
     DrawStatusPanel(1350.0f, 40.0f, myDijkstra);
-    DrawCodePanel(
-        dijkstraCodePanel,
-        { (float)GetScreenWidth() - 540.0f, (float)GetScreenHeight() - 290.0f, 520.0f, 250.0f },
-        "Dijkstra Pseudocode",
-        dijkstraCodeLines,
-        myDijkstra.activeLine
-    );
+    DrawCodePanel(dijkstraCodePanel, code_panel, "Dijkstra Pseudocode", dijkstraCodeLines, myDijkstra.activeLine);
+    
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

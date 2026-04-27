@@ -299,6 +299,13 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
 {
     panel.bounds = bounds;
 
+    if (panel.isCollapsed)
+    {
+        Rectangle expandBtn = { panel.bounds.x + panel.bounds.width - 80.0f, panel.bounds.y + 8.0f, 80.0f, 30.0f };
+        if (GuiButton(expandBtn, "< Code")) panel.isCollapsed = false;
+        return;
+    }
+
     bool contentChanged = (panel.title != title) || (panel.lines != lines);
     if (contentChanged)
     {
@@ -309,7 +316,6 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     }
     panel.activeLine = activeLine;
 
-    int lineNumberWidth = MeasureText("00", panel.fontSize);
     float maxTextWidth = 0.0f;
     for (const std::string &line : panel.lines)
     {
@@ -320,7 +326,7 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     const float titleHeight = 38.0f;
     const float visibleHeight = panel.bounds.height - titleHeight - 12.0f;
     const float contentHeight = (float)(panel.lines.size() * panel.lineHeight + panel.padding * 2.0f);
-    const float contentWidth = maxTextWidth + lineNumberWidth + 18.0f + panel.padding * 2.0f;
+    const float contentWidth = maxTextWidth + 3.0f + panel.padding * 2.0f;
     const float minScrollY = std::min(0.0f, visibleHeight - contentHeight);
     Rectangle content = { 0.0f, 0.0f, contentWidth, contentHeight };
     Rectangle view = { 0 };
@@ -352,6 +358,9 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     DrawRectangleRoundedLinesEx(panel.bounds, 0.06f, 8, 2.0f, LIGHTGRAY);
     DrawText(panel.title.c_str(), (int)(panel.bounds.x + 14.0f), (int)(panel.bounds.y + 10.0f), 22, DARKBLUE);
 
+    Rectangle collapseBtn = { panel.bounds.x + panel.bounds.width - 34.0f, panel.bounds.y + 8.0f, 24.0f, 24.0f };
+    if (GuiButton(collapseBtn, ">")) panel.isCollapsed = true;
+
     GuiScrollPanel(body, NULL, content, &panel.scroll, &view);
     BeginScissorMode((int)view.x, (int)view.y, (int)view.width, (int)view.height);
 
@@ -362,10 +371,9 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     {
         float y = drawY + i * panel.lineHeight;
         if (i == panel.activeLine)
-            DrawRectangleRounded({ drawX - 6.0f, y - 2.0f, std::max(body.width - 24.0f, contentWidth), (float)panel.lineHeight }, 0.18f, 6, Fade(ORANGE, 0.28f));
+            DrawRectangleRounded({ drawX - 6.0f, y - 2.0f, std::max(body.width - 16.0f, contentWidth), (float)panel.lineHeight }, 0.18f, 6, Fade(ORANGE, 0.28f));
 
-        DrawText(TextFormat("%02d", i + 1), (int)drawX, (int)y + 3, panel.fontSize - 2, GRAY);
-        DrawText(panel.lines[i].c_str(), (int)(drawX + lineNumberWidth + 18.0f), (int)y + 3, panel.fontSize, (i == panel.activeLine) ? MAROON : BLACK);
+        DrawText(panel.lines[i].c_str(), (int)(drawX + 4.0f), (int)y + 3, panel.fontSize, (i == panel.activeLine) ? MAROON : BLACK);
     }
 
     EndScissorMode();

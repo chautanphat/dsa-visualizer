@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+const Rectangle code_panel = {1080.0f, 600.0f, 500.0f, 250.0f};
+
 enum AppState
 {
     MENU,
@@ -26,6 +28,7 @@ struct CodePanel
     int fontSize = 20;
     int lineHeight = 28;
     float padding = 10.0f;
+    bool isCollapsed = false;
 };
 
 bool DrawCustomButton(Rectangle bounds, const char* text);

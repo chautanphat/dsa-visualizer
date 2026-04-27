@@ -519,13 +519,7 @@ void runMST(AppState &currentState)
     DrawInitPanel(X, Y + 125, myMST, inputBuffer, editMode);
     DrawOperationPanel(X, Y + 500, myMST);
     DrawStatusPanel(statusX, statusY, myMST);
-    DrawCodePanel(
-        mstCodePanel,
-        { (float)GetScreenWidth() - 540.0f, (float)GetScreenHeight() - 290.0f, 520.0f, 250.0f },
-        "Kruskal Pseudocode",
-        mstCodeLines,
-        myMST.activeLine
-    );
+    DrawCodePanel(mstCodePanel, code_panel, "Kruskal Pseudocode", mstCodeLines, myMST.activeLine);
     
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }
