@@ -14,6 +14,42 @@ const float delta_x = 256.0f;
 const float delta_y = 128.0f;
 
 static AVL myAVL;
+static CodePanel avlCodePanel;
+
+static const std::vector<std::string> avlInsertCode =
+{
+    "if node == null: return new Node(val)",
+    "if val < node.val:",
+    "    node.left = insert(node.left, val)",
+    "else if val > node.val:",
+    "    node.right = insert(node.right, val)",
+    "updateHeight(node); updateBalanceFactor(node)",
+    "if unbalanced: rotate(node)",
+    "return node"
+};
+
+static const std::vector<std::string> avlDeleteCode =
+{
+    "if val < node.val: node.left = delete(node.left, val)",
+    "else if val > node.val: node.right = delete(node.right, val)",
+    "else:",
+    "    if node is a leaf or has one child: delete node",
+    "    else: replace with successor and delete successor",
+    "updateHeight(node); updateBalanceFactor(node)",
+    "if unbalanced: rotate(node)",
+    "return node"
+};
+
+static const std::vector<std::string> avlSearchCode =
+{
+    "if node == null: return false",
+    "if val == node.val: return true",
+    "if val < node.val: return search(node.left, val)",
+    "else: return search(node.right, val)"
+};
+
+static const std::vector<std::string>* avlCurrentCode = &avlInsertCode;
+static std::string avlCurrentCodeTitle = "AVL Tree Insert";
 
 AVL ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), bf(0), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
 
@@ -28,6 +64,7 @@ void AVL::clear()
     arr.clear();
     history.clear(); 
     root = nullptr;
+    activeLine = -1;
 }
 
 AVL::Node* AVL::insertLogic(Node* node, int val, Node* p)
@@ -276,6 +313,8 @@ static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& e
 
 void AVL::startInsertAnimation(int value)
 {
+    avlCurrentCode = &avlInsertCode;
+    avlCurrentCodeTitle = "AVL Tree Insert";
     if (sz >= 31) return;
     history.clear();
     pendingValue = value; 
@@ -288,6 +327,7 @@ void AVL::startInsertAnimation(int value)
         sz++;
         
         animMode = 0;
+        activeLine = 0;
     } 
     else 
     {
@@ -295,6 +335,7 @@ void AVL::startInsertAnimation(int value)
         curIdx = root->id;
         targetIdx = -1;
         animTimer = 0.0f;
+        activeLine = 1;
     }
 
     if (mode == 1) animSpeed = 999999.0f;
@@ -303,6 +344,8 @@ void AVL::startInsertAnimation(int value)
 
 void AVL::startDeleteAnimation(int value)
 {
+    avlCurrentCode = &avlDeleteCode;
+    avlCurrentCodeTitle = "AVL Tree Delete";
     if (sz == 0 || root == nullptr) return;
     history.clear(); 
     pendingValue = value; 
@@ -313,6 +356,7 @@ void AVL::startDeleteAnimation(int value)
     curIdx = root->id;
     targetIdx = -1;
     animTimer = 0.0f;
+    activeLine = 0;
 
     if (mode == 1) animSpeed = 999999.0f;
     else animSpeed = 0.8f;
@@ -320,6 +364,8 @@ void AVL::startDeleteAnimation(int value)
 
 void AVL::startSearchAnimation(int value)
 {
+    avlCurrentCode = &avlSearchCode;
+    avlCurrentCodeTitle = "AVL Tree Search";
     if (sz == 0 || root == nullptr) return;
     history.clear();
     pendingValue = value;
@@ -330,6 +376,7 @@ void AVL::startSearchAnimation(int value)
     animMode = 20;
     curIdx = root->id;
     targetIdx = -1;
+    activeLine = 0;
 
     if (mode == 1) animSpeed = 999999.0f; 
     else animSpeed = 0.8f;
@@ -382,14 +429,15 @@ void AVL::updateAnimation()
             
             if (pendingValue < curNode->value)
             {
-                if (curNode->left == nullptr) animMode = 2;
-                else curIdx = curNode->left->id;
+                if (curNode->left == nullptr) { animMode = 2; activeLine = 2; }
+                else { curIdx = curNode->left->id; activeLine = 1; }
             } else if (pendingValue > curNode->value)
             {
-                if (curNode->right == nullptr) animMode = 2;
-                else curIdx = curNode->right->id;
+                if (curNode->right == nullptr) { animMode = 2; activeLine = 4; }
+                else { curIdx = curNode->right->id; activeLine = 3; }
             } else
             {
+                activeLine = 7;
                 targetIdx = curNode->id;
                 animMode = 0;
                 return;
@@ -421,11 +469,13 @@ void AVL::updateAnimation()
             isMoving = true; 
             
             animMode = 3;
+            activeLine = 0;
         } else if (animMode == 3) 
         {
             if (curNode == nullptr || curNode->parent == nullptr)
             {
                 animMode = 0, targetIdx = -1;
+                activeLine = 7;
                 return;
             }
             curIdx = targetIdx = curNode->parent->id;
@@ -433,7 +483,8 @@ void AVL::updateAnimation()
             curNode->height = 1 + std::max(getHeight(curNode->left), getHeight(curNode->right));
             curNode->bf = getHeight(curNode->left) - getHeight(curNode->right);
 
-            if (abs(curNode->bf) > 1) animMode = 4;
+            if (abs(curNode->bf) > 1) { animMode = 4; activeLine = 6; }
+            else { animMode = 3; activeLine = 5; }
         } else if (animMode == 4)
         {
             Node* y = arr[targetIdx];
@@ -468,30 +519,37 @@ void AVL::updateAnimation()
             
             curIdx = targetIdx = newRoot->id;
             animMode = (curIdx != -1) ? 3 : 0; 
+            if (animMode == 0) activeLine = 7;
+            else activeLine = 6;
         } else if (animMode == 10)
         {
-            if (curNode == nullptr) { animMode = 0; return; }
+            if (curNode == nullptr) { animMode = 0; activeLine = 7; return; }
             
             if (pendingValue < curNode->value)
             {
+                activeLine = 0;
                 if (curNode->left) curIdx = curNode->left->id;
-                else animMode = 0;
+                else { animMode = 0; activeLine = 7; }
             } else if (pendingValue > curNode->value)
             {
+                activeLine = 1;
                 if (curNode->right) curIdx = curNode->right->id;
-                else animMode = 0;
+                else { animMode = 0; activeLine = 7; }
             } else
             { 
+                activeLine = 2;
                 targetIdx = curIdx;
                 animMode = 11;
             }
         } else if (animMode == 11)
         {
+            activeLine = 3;
             Node* delNode = arr[targetIdx];
             if (delNode->left != nullptr && delNode->right != nullptr)
             {
                 curIdx = delNode->right->id; 
                 animMode = 14; 
+                activeLine = 4;
             } else
             {
                 Node* child = (delNode->left != nullptr) ? delNode->left : delNode->right;
@@ -526,9 +584,11 @@ void AVL::updateAnimation()
                     arr[curIdx]->bf = getHeight(arr[curIdx]->left) - getHeight(arr[curIdx]->right);
                 }
                 animMode = 13;
+                activeLine = 5;
             }
         } else if (animMode == 14)
         {
+            activeLine = 4;
             if (curNode->left != nullptr) curIdx = curNode->left->id; 
             else
             {
@@ -538,6 +598,7 @@ void AVL::updateAnimation()
             }
         } else if (animMode == 12)
         {
+            activeLine = 4;
             Node* delNode = arr[targetIdx];
             Node* child = (delNode->left != nullptr) ? delNode->left : delNode->right;
             Node* p = delNode->parent;
@@ -571,13 +632,15 @@ void AVL::updateAnimation()
                 arr[curIdx]->bf = getHeight(arr[curIdx]->left) - getHeight(arr[curIdx]->right);
             }
             animMode = 13;
+                activeLine = 5;
         } else if (animMode == 13)
         {
-            if (curIdx == -1 || arr[curIdx] == nullptr) { animMode = 0; targetIdx = -1; return; }
+            activeLine = 5;
+            if (curIdx == -1 || arr[curIdx] == nullptr) { animMode = 0; targetIdx = -1; activeLine = 7; return; }
 
             Node* backtrackNode = arr[curIdx];
 
-            if (abs(backtrackNode->bf) > 1) animMode = 15, animSpeed = 0;
+            if (abs(backtrackNode->bf) > 1) { animMode = 15; animSpeed = 0; activeLine = 6; }
             else
             {
                 curIdx = (backtrackNode->parent != nullptr) ? backtrackNode->parent->id : -1;
@@ -587,7 +650,7 @@ void AVL::updateAnimation()
                     curNode->height = 1 + std::max(getHeight(curNode->left), getHeight(curNode->right));
                     curNode->bf = getHeight(curNode->left) - getHeight(curNode->right);
                 }
-                if (curIdx == -1) animMode = 0;
+                if (curIdx == -1) { animMode = 0; activeLine = 7; }
             }
             targetIdx = curIdx;
         } else if (animMode == 15)
@@ -608,22 +671,27 @@ void AVL::updateAnimation()
             
             curIdx = targetIdx = newRoot->id;
             animMode = (curIdx != -1) ? 13 : 0; 
+            if (animMode == 0) activeLine = 7;
+            else activeLine = 5;
         } else if (animMode == 20) 
         {
             if (curNode == nullptr || targetIdx == curIdx)
             { 
                 animMode = 0;
+                activeLine = (targetIdx == curIdx && targetIdx != -1) ? 1 : 0;
                 return; 
             }
             if (pendingValue < curNode->value) 
             {
+                activeLine = 2;
                 if (curNode->left) curIdx = curNode->left->id; 
-                else animMode = 0;
+                else { animMode = 0; activeLine = 0; }
             } else if (pendingValue > curNode->value) 
             {
+                activeLine = 3;
                 if (curNode->right) curIdx = curNode->right->id; 
-                else animMode = 0;
-            } else targetIdx = curIdx;
+                else { animMode = 0; activeLine = 0; }
+            } else { targetIdx = curIdx; activeLine = 1; }
         }
     }
 }
@@ -636,6 +704,7 @@ void AVL::captureSnapshot()
     sn.targetIdx = targetIdx;
     sn.rootId = (root != nullptr) ? root->id : -1;
     sn.pendingValue = pendingValue;
+    sn.activeLine = activeLine;
 
     for (Node* n : arr) 
     {
@@ -664,6 +733,7 @@ void AVL::restoreSnapshot(const Snapshot& sn)
     curIdx = sn.curIdx;
     targetIdx = sn.targetIdx;
     pendingValue = sn.pendingValue;
+    activeLine = sn.activeLine;
 
     for (Node* n : arr) 
         if (n != nullptr) n->left = n->right = n->parent = nullptr;
@@ -745,6 +815,8 @@ void runAVL(AppState &currentState)
     
     DrawForwardButton(875, 800, myAVL);
     DrawBackwardButton(725, 800, myAVL);
+
+    DrawCodePanel(avlCodePanel, code_panel, avlCurrentCodeTitle, *avlCurrentCode, myAVL.activeLine);
 
     bool isBusy = (myAVL.animMode != 0 || myAVL.isMoving);
     if (isBusy) GuiSetState(STATE_DISABLED);
