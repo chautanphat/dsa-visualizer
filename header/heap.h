@@ -3,7 +3,6 @@
 
 #include "raylib.h"
 #include "common.h"
-#include "code_viewer.h"
 #include <vector>
 
 struct Heap

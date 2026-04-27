@@ -2,7 +2,6 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
-#include "code_viewer.h"
 #include <vector>
 #include <string.h>
 #include <sstream>
