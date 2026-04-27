@@ -29,6 +29,7 @@ struct AA
         int rootId, pendingValue;
         int animMode;
         int curIdx, targetIdx;
+        int activeLine;
     };
 
     std::vector<Node*> arr;
@@ -55,6 +56,7 @@ struct AA
     float animTimer = 0.0f, animSpeed = 0.8f;
     bool isMoving = false;
     float moveTimer = 0.0f, moveDuration = 0.8f;
+    int activeLine = -1;
 
     int mode = 0;
 
