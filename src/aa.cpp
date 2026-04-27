@@ -240,7 +240,11 @@ static void DrawOperationPanel(float x, float y, AA& AA, char* valBuf, bool& edi
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
     
     int curState = GuiGetState();
-    if (AA.sz >= 31) GuiSetState(STATE_DISABLED);
+    if (AA.sz >= 31)
+    {
+        GuiSetState(STATE_DISABLED);
+        DrawText("Maximum 31 nodes reached.", (int)x, (int)y + 112, 16, RED);
+    }
     if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
