@@ -25,6 +25,7 @@ struct LinkedList
         int currentIndex;
         int animPtrIdx;
         int searchResultIdx;
+        int activeLine;
     };
 
     Node* head;
@@ -42,6 +43,9 @@ struct LinkedList
 
     std::vector<Snapshot> history;
     int mode = 0;
+    int activeLine = -1;
+    int sz = 0;
+
     void captureSnapshot();
     void restoreSnapshot(const Snapshot& sn);
 
