@@ -14,6 +14,15 @@ static const float graphCenterX = 900.0f;
 static const float graphCenterY = 420.0f;
 static const float graphRadius = 320.0f;
 static MST myMST;
+static CodePanel mstCodePanel;
+static const std::vector<std::string> mstCodeLines =
+{
+    "sort edges by weight",
+    "make each node its own set",
+    "for each edge (u, v) in sorted order:",
+    "    accept edge and union sets if sets differ",
+    "    otherwise reject edge",
+};
 
 MST::MST() {}
 MST::~MST() {}
@@ -28,6 +37,7 @@ void MST::clear()
     history.clear();
     currentEdge = -1;
     selectedEdge = -1;
+    activeLine = -1;
     edgesAccepted = 0;
     totalWeight = 0;
     animMode = 0;
@@ -242,6 +252,7 @@ void MST::startMSTAnimation()
     selectedEdge = -1;
     edgesAccepted = 0;
     totalWeight = 0;
+    activeLine = 1;
     animMode = 1;
     mstCompleted = false;
     statusText = "Ready.";
@@ -268,6 +279,7 @@ void MST::updateAnimation()
         selectedEdge = sortedEdgeIds[currentEdge];
         edges[selectedEdge].state = 1;
         const Edge &edge = edges[selectedEdge];
+        activeLine = 2;
         statusText = TextFormat("Check %d-%d (%d).", nodes[edge.u].label, nodes[edge.v].label, edge.weight);
         animMode = 2;
     }
@@ -281,11 +293,13 @@ void MST::updateAnimation()
             unionSets(ur, vr);
             edgesAccepted++;
             totalWeight += e.weight;
+            activeLine = 3;
             statusText = TextFormat("Accept %d-%d.", nodes[e.u].label, nodes[e.v].label);
         }
         else
         {
             e.state = 3;
+            activeLine = 4;
             statusText = TextFormat("Reject %d-%d. Cycle.", nodes[e.u].label, nodes[e.v].label);
         }
 
@@ -310,6 +324,7 @@ void MST::captureSnapshot()
     Snapshot sn;
     sn.currentEdge = currentEdge;
     sn.selectedEdge = selectedEdge;
+    sn.activeLine = activeLine;
     sn.animMode = animMode;
     sn.edgesAccepted = edgesAccepted;
     sn.totalWeight = totalWeight;
@@ -328,6 +343,7 @@ void MST::restoreSnapshot(const Snapshot &sn)
 {
     currentEdge = sn.currentEdge;
     selectedEdge = sn.selectedEdge;
+    activeLine = sn.activeLine;
     animMode = sn.animMode;
     edgesAccepted = sn.edgesAccepted;
     totalWeight = sn.totalWeight;
@@ -503,6 +519,13 @@ void runMST(AppState &currentState)
     DrawInitPanel(X, Y + 125, myMST, inputBuffer, editMode);
     DrawOperationPanel(X, Y + 500, myMST);
     DrawStatusPanel(statusX, statusY, myMST);
+    DrawCodePanel(
+        mstCodePanel,
+        { (float)GetScreenWidth() - 540.0f, (float)GetScreenHeight() - 290.0f, 520.0f, 250.0f },
+        "Kruskal Pseudocode",
+        mstCodeLines,
+        myMST.activeLine
+    );
     
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

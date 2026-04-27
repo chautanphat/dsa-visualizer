@@ -37,6 +37,7 @@ struct MST
         std::vector<int> rank;
         int currentEdge;
         int selectedEdge;
+        int activeLine;
         int animMode;
         int edgesAccepted;
         int totalWeight;
@@ -53,6 +54,7 @@ struct MST
 
     int currentEdge = -1;
     int selectedEdge = -1;
+    int activeLine = -1;
     int edgesAccepted = 0;
     int totalWeight = 0;
 
