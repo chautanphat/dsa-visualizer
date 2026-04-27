@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <vector>
 
 static LinkedList myAppList;
 
@@ -84,6 +85,56 @@ void LinkedList::clear()
     head = nullptr;
 }
 
+void LinkedList::captureSnapshot()
+{
+    Snapshot sn;
+    sn.animMode = animMode;
+    sn.targetValue = targetValue;
+    sn.targetIndex = targetIndex;
+    sn.currentIndex = currentIndex;
+
+    int ptrIdx = -1;
+    int searchIdx = -1;
+    Node* curr = head;
+    int idx = 0;
+    while (curr)
+    {
+        sn.values.push_back(curr->value);
+        if (curr == animPtr) ptrIdx = idx;
+        if (curr == searchResult) searchIdx = idx;
+        curr = curr->next;
+        idx++;
+    }
+    sn.animPtrIdx = ptrIdx;
+    sn.searchResultIdx = searchIdx;
+    history.push_back(sn);
+}
+
+void LinkedList::restoreSnapshot(const Snapshot& sn)
+{
+    clear();
+    animMode = sn.animMode;
+    targetValue = sn.targetValue;
+    targetIndex = sn.targetIndex;
+    currentIndex = sn.currentIndex;
+
+    for (int val : sn.values) addToTail(val);
+
+    animPtr = nullptr;
+    searchResult = nullptr;
+
+    Node* curr = head;
+    int idx = 0;
+    while (curr)
+    {
+        if (idx == sn.animPtrIdx) animPtr = curr;
+        if (idx == sn.searchResultIdx) searchResult = curr;
+        curr = curr->next;
+        idx++;
+    }
+    animTimer = 0.0f;
+}
+
 void LinkedList::drawLinkedList(float startX, float startY)
 {
     Node* cur = head;
@@ -115,14 +166,21 @@ void LinkedList::drawLinkedList(float startX, float startY)
     {
         float pauseTime = 0.5f;
         float slideTime = 0.15f;
+        if (mode == 1) {
+            pauseTime = animSpeed;
+            slideTime = 0.0f;
+        }
         float progress = 0.0f;
 
         animTimer += GetFrameTime(); 
         
         if (animTimer > pauseTime)
         {
-            progress = (animTimer - pauseTime) / slideTime;
-            if (progress > 1.0f) progress = 1.0f; 
+            if (slideTime > 0.0f)
+            {
+                progress = (animTimer - pauseTime) / slideTime;
+                if (progress > 1.0f) progress = 1.0f; 
+            } else progress = 1.0f;
         }
 
         float currentX = animPtr->box.x;
@@ -144,31 +202,42 @@ void LinkedList::drawLinkedList(float startX, float startY)
     {
         float pauseTime = 0.5f;
         float slideTime = 0.15f;
+        if (mode == 1)
+        {
+            pauseTime = animSpeed;
+            slideTime = 0.0f;
+        }
         float totalStepTime = pauseTime + slideTime;
 
         if (animMode == 2 && animPtr->value == targetValue)
         {
             if (animTimer >= pauseTime) 
             {
+                captureSnapshot();
                 searchResult = animPtr;
                 animMode = 0;
                 animPtr = nullptr;
+                if (mode == 1) animSpeed = 999999.0f;
             }
         }
         else if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex)
         {
             if (animTimer >= pauseTime) 
             {
+                captureSnapshot();
                 if (animMode == 3)
                     animPtr->value = targetValue;
                 else if (animMode == 4) deleteNode(targetIndex);
                 animMode = 0;
                 animPtr = nullptr;
+                if (mode == 1) animSpeed = 999999.0f;
             }
         }
         else if (animTimer >= totalStepTime)
         {
+            captureSnapshot();
             animTimer = 0.0f;
+            if (mode == 1) animSpeed = 999999.0f;
 
             if (animPtr->next != nullptr)
             {
@@ -193,28 +262,35 @@ void LinkedList::startAddTailAnimation(int value)
 {
     if (!head) { addToHead(value); return; }
     
+    history.clear();
     animMode = 1;
     animPtr = head;
     targetValue = value;
     animTimer = 0.0f;
     searchResult = nullptr;
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.5f;
 }
 
 void LinkedList::startSearchAnimation(int value)
 {
     if (!head) return;
     
+    history.clear();
     animMode = 2;
     animPtr = head;
     targetValue = value;
     animTimer = 0.0f;
     searchResult = nullptr;
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.5f;
 }
 
 void LinkedList::startUpdateAnimation(int index, int value)
 {
     if (!head || index < 0) return;
     
+    history.clear();
     animMode = 3;
     animPtr = head;
     targetIndex = index;
@@ -222,28 +298,30 @@ void LinkedList::startUpdateAnimation(int index, int value)
     currentIndex = 0;
     animTimer = 0.0f;
     searchResult = nullptr;
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.5f;
 }
 
 void LinkedList::startDeleteAnimation(int index)
 {
     if (!head || index < 0) return; 
     
+    history.clear();
     animMode = 4;
     animPtr = head;
     targetIndex = index;
     currentIndex = 0;
     animTimer = 0.0f;
     searchResult = nullptr;
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.5f;
 }
 
 void LinkedList::randomize()
 {
-    this->clear();
-    int nodeCount = GetRandomValue(3, 10);
-    for (int i = 0; i < nodeCount; ++i)
-    {
-        this->addToTail(GetRandomValue(1, 100));
-    }
+    clear();
+    int nodeCount = GetRandomValue(3, 8);
+    for (int i = 0; i < nodeCount; ++i) addToTail(GetRandomValue(1, 100));
 }
 
 void LinkedList::fileUpload()
@@ -253,13 +331,45 @@ void LinkedList::fileUpload()
 
 void LinkedList::manualUpload(const std::string &input)
 {
-    this->clear();
+    clear();
     std::istringstream iss(input);
     int value;
-    while (iss >> value)
+    while (iss >> value) addToTail(value);
+}
+
+static void DrawToggle(float x, float y, LinkedList& list)
+{
+    int oldMode = list.mode;
+
+    makeGuiLabel(x + 45, y - 30, "Animation Mode:");
+    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &list.mode);
+
+    if (list.mode != oldMode)
     {
-        this->addToTail(value);
+        if (list.mode == 1) list.animSpeed = 999999.0f; 
+        else list.animSpeed = 0.5f;
     }
+}
+
+static void DrawForwardButton(float x, float y, LinkedList& list)
+{
+    GuiSetState(STATE_NORMAL);
+    if (list.mode != 1 || list.animMode == 0) GuiSetState(STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) list.animSpeed = 0.0f; 
+    GuiSetState(STATE_NORMAL);
+}
+
+static void DrawBackwardButton(float x, float y, LinkedList& list)
+{
+    if (list.mode != 1 || list.history.empty()) GuiSetState(STATE_DISABLED);
+    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
+    {
+        LinkedList::Snapshot lastState = list.history.back();
+        list.history.pop_back();
+        list.restoreSnapshot(lastState);
+        if (list.mode == 1) list.animSpeed = 999999.0f;
+    }
+    GuiSetState(STATE_NORMAL);
 }
 
 static void DrawInitPanel(float x, float y, LinkedList& list, char* inputBuf, bool& editMode)
@@ -317,6 +427,9 @@ static void DrawUpdatePanel(float x, float y, LinkedList& list, char* idxBuf, bo
         if (issIndex >> index && issValue >> value && index >= 0 && list.animMode == 0) list.startUpdateAnimation(index, value);
     }
     
+    int curState = GuiGetState();
+    if (list.head == nullptr) GuiSetState(STATE_DISABLED);
+
     if (GuiButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Delete"))
     {
         std::istringstream issIndex(idxBuf);
@@ -325,6 +438,8 @@ static void DrawUpdatePanel(float x, float y, LinkedList& list, char* idxBuf, bo
     }
     
     if (GuiButton((Rectangle){ x + 200, y + 75, 90, 35 }, "Clear")) list.clear(); 
+
+    GuiSetState(curState);
 }
 
 static void DrawSearchPanel(float x, float y, LinkedList& list, char* searchBuf, bool& editModeSearch)
@@ -362,12 +477,18 @@ void runLinkedList(AppState &currentState)
     myAppList.drawLinkedList(430, 250);
     float X = 60, Y = 250;
 
+    DrawForwardButton(875, 800, myAppList);
+    DrawBackwardButton(725, 800, myAppList);
+
     if (myAppList.animMode == 0) GuiSetState(STATE_NORMAL);
     else GuiSetState(STATE_DISABLED);
 
+    DrawToggle(X, Y - 100, myAppList);
     DrawInitPanel(600, 20, myAppList, inputBuffer, editMode);
     DrawRectangleLinesEx((Rectangle){ X - 20, Y, 330, 450 }, 1, BLACK);
     DrawAddPanel(X, Y + 25, myAppList, valBuffer, editModeValue);
     DrawUpdatePanel(X, Y + 150, myAppList, indexBuffer, editModeIndex, updateValBuffer, updateValEditMode);
     DrawSearchPanel(X, Y + 300, myAppList, valSearchBuffer, valSearchEditMode);
+
+    GuiSetState(STATE_NORMAL);
 }

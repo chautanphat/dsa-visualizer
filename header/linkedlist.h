@@ -4,6 +4,7 @@
 #include "raylib.h"
 #include "common.h"
 #include <string>
+#include <vector>
 
 struct LinkedList
 {
@@ -13,6 +14,17 @@ struct LinkedList
         Node* next;
         Rectangle box;
         Node(int val);
+    };
+
+    struct Snapshot
+    {
+        std::vector<int> values;
+        int animMode;
+        int targetValue;
+        int targetIndex;
+        int currentIndex;
+        int animPtrIdx;
+        int searchResultIdx;
     };
 
     Node* head;
@@ -28,10 +40,10 @@ struct LinkedList
     int targetIndex = 0;
     int currentIndex = 0;
 
-    // int animMode = 0; 
-    // Node* animPtr = nullptr;
-    // int targetValue = 0; 
-    // float animTimer = 0.0f;
+    std::vector<Snapshot> history;
+    int mode = 0;
+    void captureSnapshot();
+    void restoreSnapshot(const Snapshot& sn);
 
     LinkedList();
     ~LinkedList();
