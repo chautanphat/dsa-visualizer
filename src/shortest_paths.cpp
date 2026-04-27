@@ -13,9 +13,22 @@ const float graphCenterX = 900.0f;
 const float graphCenterY = 420.0f;
 const float graphRadius = 320.0f;
 const float animationSpeed = 0.8f;
-const float stepModePause = 999999.0f;
+const float stepPause = 999999.0f;
 const int INF = 1000000000;
 static DIJKSTRA myDijkstra;
+static CodePanel dijkstraCodePanel;
+static const std::vector<std::string> dijkstraCodeLines =
+{
+    "for each vertex: dist = inf, prev = nil",
+    "dist[source] = 0",
+    "while there is an unfinished node:",
+    "    u = unfinished node with minimum dist",
+    "    for each edge (u, v, w):",
+    "        if v is finalized: continue",
+    "        if dist[u] + w < dist[v]:",
+    "            dist[v] = dist[u] + w; prev[v] = u",
+    "    finalize u"
+};
 
 static bool sameEdge(const DIJKSTRA::Edge &edge, int a, int b)
 {
@@ -24,7 +37,7 @@ static bool sameEdge(const DIJKSTRA::Edge &edge, int a, int b)
 
 static void changeSpeed(DIJKSTRA &dijkstra)
 {
-    dijkstra.animSpeed = (dijkstra.mode == 1) ? stepModePause : animationSpeed;
+    dijkstra.animSpeed = (dijkstra.mode == 1) ? stepPause : animationSpeed;
 }
 
 static int findNext(const DIJKSTRA &dijkstra)
@@ -41,21 +54,14 @@ static int findNext(const DIJKSTRA &dijkstra)
 
 static const char *DistanceText(int distance)
 {
-    return (distance == INF) ? "INF" : TextFormat("%d", distance);
-}
-
-static void RestorePreviousStep(DIJKSTRA &dijkstra)
-{
-    DIJKSTRA::Snapshot lastState = dijkstra.history.back();
-    dijkstra.history.pop_back();
-    dijkstra.restoreSnapshot(lastState);
+    return (distance == INF) ? "inf" : TextFormat("%d", distance);
 }
 
 void DIJKSTRA::clear()
 {
     nodes.clear(); edges.clear(); distances.clear(); predecessor.clear();
     finalized.clear(); pendingEdges.clear(); history.clear();
-    currentEdge = selectedEdge = activeNode = draggingNode = sourceNode = -1;
+    currentEdge = selectedEdge = activeNode = activeLine = draggingNode = sourceNode = -1;
     animMode = 0; animTimer = 0.0f; dijkstraCompleted = false;
     animSpeed = animationSpeed; statusText = "Ready.";
 }
@@ -132,7 +138,6 @@ void DIJKSTRA::sync()
                     edge.state = 2;
                     break;
                 }
-
     if (selectedEdge >= 0 && selectedEdge < (int)edges.size()) edges[selectedEdge].state = 1;
 }
 
@@ -144,6 +149,7 @@ void DIJKSTRA::resetDistances()
     pendingEdges.clear();
     currentEdge = selectedEdge = activeNode = -1;
     sync();
+    activeLine = (sourceNode >= 0 && sourceNode < (int)nodes.size()) ? 1 : 0;
     statusText = (sourceNode >= 0 && sourceNode < (int)nodes.size())
         ? (distances[sourceNode] = 0, TextFormat("Source node: %d", nodes[sourceNode].label))
         : "Click a node to choose\nthe source.";
@@ -209,6 +215,7 @@ void DIJKSTRA::startDijkstraAnimation()
     history.clear();
     resetDistances();
     animMode = 1;
+    activeLine = 2;
     dijkstraCompleted = false;
     changeSpeed(*this);
 }
@@ -232,6 +239,7 @@ void DIJKSTRA::updateAnimation()
             dijkstraCompleted = true;
             selectedEdge = activeNode = -1;
             sync();
+            activeLine = 8;
             statusText = "Dijkstra complete.";
             return;
         }
@@ -244,6 +252,7 @@ void DIJKSTRA::updateAnimation()
         currentEdge = 0;
         selectedEdge = -1;
         sync();
+        activeLine = 3;
         statusText = TextFormat("Select node %d.", nodes[activeNode].label);
         animMode = 2;
         return;
@@ -256,6 +265,7 @@ void DIJKSTRA::updateAnimation()
             finalized[activeNode] = true;
             selectedEdge = -1;
             sync();
+            activeLine = 8;
             statusText = TextFormat("Finalize node %d.", nodes[activeNode].label);
             animMode = 1;
             activeNode = -1;
@@ -266,6 +276,7 @@ void DIJKSTRA::updateAnimation()
         sync();
         const Edge &edge = edges[selectedEdge];
         int neighbor = (edge.u == activeNode) ? edge.v : edge.u;
+        activeLine = 4;
         statusText = TextFormat("Check %d -> %d (%d).", nodes[activeNode].label, nodes[neighbor].label, edge.weight);
         animMode = 3;
         return;
@@ -273,15 +284,25 @@ void DIJKSTRA::updateAnimation()
 
     const Edge &edge = edges[selectedEdge];
     int neighbor = (edge.u == activeNode) ? edge.v : edge.u;
-    if (finalized[neighbor]) statusText = TextFormat("Skip %d. Already finalized.", nodes[neighbor].label);
-    else if (distances[activeNode] == INF) statusText = TextFormat("Skip %d. Source is unreachable.", nodes[neighbor].label);
+    if (finalized[neighbor])
+    {
+        activeLine = 5;
+        statusText = TextFormat("Skip %d. Already finalized.", nodes[neighbor].label);
+    }
+    else if (distances[activeNode] == INF)
+    {
+        activeLine = 6;
+        statusText = TextFormat("Skip %d. Source is unreachable.", nodes[neighbor].label);
+    }
     else
     {
+        activeLine = 6;
         int candidate = distances[activeNode] + edge.weight;
         if (candidate < distances[neighbor])
         {
             distances[neighbor] = candidate;
             predecessor[neighbor] = activeNode;
+            activeLine = 7;
             statusText = TextFormat("Update dist[%d] = %d.", nodes[neighbor].label, candidate);
         }
         else statusText = TextFormat("Keep dist[%d] = %s.", nodes[neighbor].label, DistanceText(distances[neighbor]));
@@ -299,6 +320,7 @@ void DIJKSTRA::captureSnapshot()
     sn.currentEdge = currentEdge;
     sn.selectedEdge = selectedEdge;
     sn.activeNode = activeNode;
+    sn.activeLine = activeLine;
     sn.animMode = animMode;
     sn.dijkstraCompleted = dijkstraCompleted;
     sn.statusText = statusText;
@@ -315,6 +337,7 @@ void DIJKSTRA::restoreSnapshot(const Snapshot &sn)
     currentEdge = sn.currentEdge;
     selectedEdge = sn.selectedEdge;
     activeNode = sn.activeNode;
+    activeLine = sn.activeLine;
     animMode = sn.animMode;
     dijkstraCompleted = sn.dijkstraCompleted;
     statusText = sn.statusText;
@@ -338,7 +361,12 @@ static void DrawForwardButton(float x, float y, DIJKSTRA &dijkstra)
 static void DrawBackwardButton(float x, float y, DIJKSTRA &dijkstra)
 {
     GuiSetState((dijkstra.mode == 1 && !dijkstra.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) RestorePreviousStep(dijkstra);
+    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward"))
+    {
+        DIJKSTRA::Snapshot lastState = dijkstra.history.back();
+        dijkstra.history.pop_back();
+        dijkstra.restoreSnapshot(lastState);
+    }
     GuiSetState(STATE_NORMAL);
 }
 
@@ -457,6 +485,7 @@ void runDijkstra(AppState &currentState)
 {
     static char inputBuffer[2048] = "1 2 10\n2 3 5\n1 3 15";
     static bool editMode = false;
+    (void)currentState;
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
     myDijkstra.drawGraph();
@@ -471,5 +500,12 @@ void runDijkstra(AppState &currentState)
     DrawInitPanel(x, y + 125, myDijkstra, inputBuffer, editMode);
     DrawOperationPanel(x, y + 500, myDijkstra);
     DrawStatusPanel(1350.0f, 40.0f, myDijkstra);
+    DrawCodePanel(
+        dijkstraCodePanel,
+        { (float)GetScreenWidth() - 560.0f, (float)GetScreenHeight() - 290.0f, 520.0f, 250.0f },
+        "Dijkstra Pseudocode",
+        dijkstraCodeLines,
+        myDijkstra.activeLine
+    );
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

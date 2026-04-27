@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include "common.h"
+#include "code_viewer.h"
 #include <vector>
 #include <string>
 
@@ -40,6 +41,7 @@ struct DIJKSTRA
         int currentEdge;
         int selectedEdge;
         int activeNode;
+        int activeLine;
         int animMode;
         bool dijkstraCompleted;
         std::string statusText;
@@ -55,6 +57,7 @@ struct DIJKSTRA
     int currentEdge = -1;
     int selectedEdge = -1;
     int activeNode = -1;
+    int activeLine = -1;
 
     int animMode = 0;
     float animTimer = 0.0f;
