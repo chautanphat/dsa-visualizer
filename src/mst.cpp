@@ -206,10 +206,11 @@ bool MST::manualUpload(const std::string &input)
     for (int i = 0; i < maxNode; i++) nodes[i] = Node(i, i + 1);
 
     int nextId = 0;
-    for (auto &[lu, lv, ww] : parsedEdges)
+    for (const auto &edge : parsedEdges)
     {
-        int uu = lu - 1;
-        int vv = lv - 1;
+        int uu, vv, ww;
+        std::tie(uu, vv, ww) = edge;
+        uu--, vv--;
         bool dup = false;
         for (auto &e : edges) if ((e.u == uu && e.v == vv) || (e.u == vv && e.v == uu)) { dup = true; break; }
         if (!dup) edges.push_back({ nextId++, uu, vv, ww, 0 });
@@ -296,7 +297,10 @@ void MST::updateAnimation()
             animMode = 0;
             mstCompleted = true;
             for (auto &e : edges) if (e.state == 0) e.state = 3;
-            statusText = TextFormat("MST complete.");
+            if (edgesAccepted == (int)nodes.size() - 1)
+                statusText = "MST complete.";
+            else
+                statusText = "Graph is disconnected. MST cannot connect all nodes.";
         } else animMode = 1;
     }
 }

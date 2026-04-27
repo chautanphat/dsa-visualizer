@@ -195,11 +195,13 @@ bool DIJKSTRA::manualUpload(const std::string &input)
     for (int i = 0; i < maxNode; i++) nodes[i] = Node(i, i + 1);
 
     int nextId = 0;
-    for (const auto &edgeData : parsedEdges)
+    for (const auto &edge : parsedEdges)
     {
-        int uu = std::get<0>(edgeData) - 1, vv = std::get<1>(edgeData) - 1, ww = std::get<2>(edgeData);
+        int uu, vv, ww;
+        std::tie(uu, vv, ww) = edge;
+        uu--, vv--;
         bool dup = false;
-        for (const auto &edge : edges) if (sameEdge(edge, uu, vv)) { dup = true; break; }
+        for (const auto &e : edges) if (sameEdge(e, uu, vv)) { dup = true; break; }
         if (!dup) edges.push_back({ nextId++, uu, vv, ww, 0 });
     }
     if (edges.empty()) return false;
