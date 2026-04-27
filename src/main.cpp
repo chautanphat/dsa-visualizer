@@ -8,13 +8,15 @@
 #include "avl.h"
 #include "aa.h"
 #include "mst.h"
+#include "shortest_paths.h"
 #include <ctime>
 
 const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
 
-static AppState currentState = MINIMUM_SPANNING_TREE;
+static AppState currentState = MENU;
+
 int main()
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
@@ -48,10 +50,13 @@ int main()
                 case MINIMUM_SPANNING_TREE:
                     runMST(currentState);
                     break;
+                case SHORTEST_PATHS:
+                    runDijkstra(currentState);
+                    break;
             }
             if (currentState != MENU)
             {
-                if (GuiButton((Rectangle){ 20, 20, 60, 30 }, "Back")) currentState = MENU;
+                if (GuiButton((Rectangle){ 20, 20, 80, 30 }, "#72#Back")) currentState = MENU;
             }
 
         EndDrawing();

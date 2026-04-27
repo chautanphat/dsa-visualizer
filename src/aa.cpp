@@ -2,7 +2,6 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
-#include "code_viewer.h"
 #include <vector>
 #include <string.h>
 #include <sstream>
@@ -15,6 +14,44 @@ const float delta_x = 256.0f;
 const float delta_y = 128.0f;
 
 static AA myAA;
+static CodePanel aaCodePanel;
+
+static const std::vector<std::string> insertCode =
+{
+    "if node == null: return new Node(val)",
+    "if val < node.val:",
+    "    node.left = insert(node.left, val)",
+    "else if val > node.val:",
+    "    node.right = insert(node.right, val)",
+    "node = skew(node)",
+    "node = split(node)",
+    "return node"
+};
+
+static const std::vector<std::string> deleteCode =
+{
+    "if val < node.val: node.left = delete(node.left, val)",
+    "else if val > node.val: node.right = delete(node.right, val)",
+    "else:",
+    "    if node is a leaf or has one child: delete node",
+    "    else: replace with successor and delete successor",
+    "decreaseLevel(node)",
+    "node = skew(node); node.right = skew(node.right)",
+    "node.right.right = skew(node.right.right)",
+    "node = split(node); node.right = split(node.right)",
+    "return node"
+};
+
+static const std::vector<std::string> searchCode =
+{
+    "if node == null: return false",
+    "if val == node.val: return true",
+    "if val < node.val: return search(node.left, val)",
+    "else: return search(node.right, val)"
+};
+
+static const std::vector<std::string>* aaCurrentCode = &insertCode;
+static std::string aaCurrentCodeTitle = "AA Tree Insert";
 
 AA ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), level(1), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
 
@@ -29,6 +66,7 @@ void AA::clear()
     arr.clear();
     history.clear(); 
     root = nullptr;
+    activeLine = -1;
 }
 
 AA::Node* AA::skew(Node* node) 
@@ -202,7 +240,11 @@ static void DrawOperationPanel(float x, float y, AA& AA, char* valBuf, bool& edi
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
     
     int curState = GuiGetState();
-    if (AA.sz >= 31) GuiSetState(STATE_DISABLED);
+    if (AA.sz >= 31)
+    {
+        GuiSetState(STATE_DISABLED);
+        DrawText("Maximum 31 nodes reached.", (int)x, (int)y + 112, 16, RED);
+    }
     if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
@@ -242,6 +284,8 @@ static void DrawOperationPanel(float x, float y, AA& AA, char* valBuf, bool& edi
 
 void AA::startInsertAnimation(int value)
 {
+    aaCurrentCode = &insertCode;
+    aaCurrentCodeTitle = "AA Tree Insert";
     if (sz >= 31) return;
     history.clear();
     pendingValue = value; 
@@ -269,6 +313,8 @@ void AA::startInsertAnimation(int value)
 
 void AA::startDeleteAnimation(int value)
 {
+    aaCurrentCode = &deleteCode;
+    aaCurrentCodeTitle = "AA Tree Delete";
     if (sz == 0 || root == nullptr) return;
     history.clear(); 
     pendingValue = value; 
@@ -279,6 +325,7 @@ void AA::startDeleteAnimation(int value)
     curIdx = root->id;
     targetIdx = -1;
     animTimer = 0.0f;
+    activeLine = 0;
 
     if (mode == 1) animSpeed = 999999.0f;
     else animSpeed = 0.8f;
@@ -286,6 +333,8 @@ void AA::startDeleteAnimation(int value)
 
 void AA::startSearchAnimation(int value)
 {
+    aaCurrentCode = &searchCode;
+    aaCurrentCodeTitle = "AA Tree Search";
     if (sz == 0 || root == nullptr) return;
     history.clear();
     pendingValue = value;
@@ -296,6 +345,7 @@ void AA::startSearchAnimation(int value)
     animMode = 20;
     curIdx = root->id;
     targetIdx = -1;
+    activeLine = 0;
 
     if (mode == 1) animSpeed = 999999.0f; 
     else animSpeed = 0.8f;
@@ -348,14 +398,29 @@ void AA::updateAnimation()
             
             if (pendingValue < curNode->value)
             {
-                if (curNode->left == nullptr) animMode = 2;
-                else curIdx = curNode->left->id;
+                if (curNode->left == nullptr)
+                {
+                    animMode = 2;
+                    activeLine = 2;
+                } else
+                {
+                    curIdx = curNode->left->id;
+                    activeLine = 1;
+                }
             } else if (pendingValue > curNode->value)
             {
-                if (curNode->right == nullptr) animMode = 2;
-                else curIdx = curNode->right->id;
+                if (curNode->right == nullptr)
+                {
+                    animMode = 2;
+                    activeLine = 4;
+                } else
+                {
+                    curIdx = curNode->right->id;
+                    activeLine = 3;
+                }
             } else
             {
+                activeLine = 7;
                 targetIdx = curNode->id;
                 animMode = 0;
                 return;
@@ -387,11 +452,13 @@ void AA::updateAnimation()
             isMoving = true; 
             
             animMode = 3;
+            activeLine = 0;
         } else if (animMode == 3) 
         {
             if (curNode == nullptr || curNode->parent == nullptr)
             {
                 animMode = 0, targetIdx = -1;
+                activeLine = 7;
                 return;
             }
             
@@ -402,8 +469,15 @@ void AA::updateAnimation()
             if (y->left != nullptr && y->left->level == y->level) needRotate = true; 
             if (y->right != nullptr && y->right->right != nullptr && y->right->right->level == y->level) needRotate = true; 
 
-            if (needRotate) animMode = 4;
-            else animMode = 3;
+            if (needRotate)
+            {
+                animMode = 4;
+                activeLine = 5;
+            } else
+            {
+                animMode = 3;
+                activeLine = 7;
+            }
         } else if (animMode == 4)
         {
             Node* y = arr[targetIdx];
@@ -425,30 +499,37 @@ void AA::updateAnimation()
             
             curIdx = targetIdx = newRoot->id;
             animMode = (curIdx != -1) ? 3 : 0;
+            if (animMode == 0) activeLine = 7;
+            else activeLine = 6;
         } else if (animMode == 10)
         {
-            if (curNode == nullptr) { animMode = 0; return; }
+            if (curNode == nullptr) { animMode = 0; activeLine = 9; return; }
             
             if (pendingValue < curNode->value)
             {
+                activeLine = 0;
                 if (curNode->left) curIdx = curNode->left->id;
-                else animMode = 0;
+                else { animMode = 0; activeLine = 9; }
             } else if (pendingValue > curNode->value)
             {
+                activeLine = 1;
                 if (curNode->right) curIdx = curNode->right->id;
-                else animMode = 0;
+                else { animMode = 0; activeLine = 9; }
             } else
             { 
+                activeLine = 2;
                 targetIdx = curIdx;
                 animMode = 11;
             }
         } else if (animMode == 11)
         {
+            activeLine = 3;
             Node* delNode = arr[targetIdx];
             if (delNode->left != nullptr && delNode->right != nullptr)
             {
                 curIdx = delNode->right->id; 
                 animMode = 14; 
+                activeLine = 4;
             } else
             {
                 Node* child = (delNode->left != nullptr) ? delNode->left : delNode->right;
@@ -472,9 +553,11 @@ void AA::updateAnimation()
                 
                 targetIdx = curIdx;
                 animMode = 13;
+                activeLine = 5;
             }
         } else if (animMode == 14)
         {
+            activeLine = 4;
             if (curNode->left != nullptr) curIdx = curNode->left->id; 
             else
             {
@@ -484,6 +567,7 @@ void AA::updateAnimation()
             }
         } else if (animMode == 12)
         {
+            activeLine = 4;
             Node* delNode = arr[targetIdx];
             Node* child = (delNode->left != nullptr) ? delNode->left : delNode->right;
             Node* p = delNode->parent;
@@ -506,8 +590,10 @@ void AA::updateAnimation()
             
             targetIdx = curIdx;
             animMode = 13;
+            activeLine = 5;
         } else if (animMode == 13)
         {
+            activeLine = 6;
             bool treeChanged = false;
             while (curIdx != -1 && arr[curIdx] != nullptr && !treeChanged)
             {
@@ -542,23 +628,32 @@ void AA::updateAnimation()
                 calculatePositions(root, x_root, y_root, delta_x);
                 isMoving = true; 
                 moveTimer = 0.0f;
-            } else animMode = 0; 
+            } else {
+                animMode = 0; 
+                activeLine = 9;
+            } 
         } else if (animMode == 20) 
         {
             if (curNode == nullptr || targetIdx == curIdx)
             { 
                 animMode = 0;
+                activeLine = (targetIdx == curIdx && targetIdx != -1) ? 1 : 0;
                 return; 
             }
             if (pendingValue < curNode->value) 
             {
+                activeLine = 2;
                 if (curNode->left) curIdx = curNode->left->id; 
-                else animMode = 0;
+                else { animMode = 0; activeLine = 0; }
             } else if (pendingValue > curNode->value) 
             {
+                activeLine = 3;
                 if (curNode->right) curIdx = curNode->right->id; 
-                else animMode = 0;
-            } else targetIdx = curIdx;
+                else { animMode = 0; activeLine = 0; }
+            } else {
+                targetIdx = curIdx;
+                activeLine = 1;
+            }
         }
     }
 }
@@ -569,6 +664,7 @@ void AA::captureSnapshot()
     sn.animMode = animMode;
     sn.curIdx = curIdx;
     sn.targetIdx = targetIdx;
+    sn.activeLine = activeLine;
     
     if (root != nullptr) sn.rootId = root->id;
     else sn.rootId = -1;
@@ -599,6 +695,7 @@ void AA::restoreSnapshot(const Snapshot& sn)
     curIdx = sn.curIdx;
     targetIdx = sn.targetIdx;
     pendingValue = sn.pendingValue;
+    activeLine = sn.activeLine;
 
     for (Node* n : arr) 
         if (n != nullptr)
@@ -685,6 +782,8 @@ void runAA(AppState &currentState)
     
     DrawForwardButton(875, 800, myAA);
     DrawBackwardButton(725, 800, myAA);
+
+    DrawCodePanel(aaCodePanel, code_panel, aaCurrentCodeTitle, *aaCurrentCode, myAA.activeLine);
 
     bool isBusy = (myAA.animMode != 0 || myAA.isMoving);
     if (isBusy) GuiSetState(STATE_DISABLED);

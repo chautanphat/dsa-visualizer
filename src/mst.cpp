@@ -14,6 +14,15 @@ static const float graphCenterX = 900.0f;
 static const float graphCenterY = 420.0f;
 static const float graphRadius = 320.0f;
 static MST myMST;
+static CodePanel mstCodePanel;
+static const std::vector<std::string> mstCodeLines =
+{
+    "sort edges by weight",
+    "make each node its own set",
+    "for each edge (u, v) in sorted order:",
+    "    accept edge and union sets if sets differ",
+    "    otherwise reject edge",
+};
 
 MST::MST() {}
 MST::~MST() {}
@@ -28,6 +37,7 @@ void MST::clear()
     history.clear();
     currentEdge = -1;
     selectedEdge = -1;
+    activeLine = -1;
     edgesAccepted = 0;
     totalWeight = 0;
     animMode = 0;
@@ -206,10 +216,11 @@ bool MST::manualUpload(const std::string &input)
     for (int i = 0; i < maxNode; i++) nodes[i] = Node(i, i + 1);
 
     int nextId = 0;
-    for (auto &[lu, lv, ww] : parsedEdges)
+    for (const auto &edge : parsedEdges)
     {
-        int uu = lu - 1;
-        int vv = lv - 1;
+        int uu, vv, ww;
+        std::tie(uu, vv, ww) = edge;
+        uu--, vv--;
         bool dup = false;
         for (auto &e : edges) if ((e.u == uu && e.v == vv) || (e.u == vv && e.v == uu)) { dup = true; break; }
         if (!dup) edges.push_back({ nextId++, uu, vv, ww, 0 });
@@ -231,26 +242,23 @@ void MST::startMSTAnimation()
     if (nodes.empty() || edges.empty()) return;
 
     history.clear();
-    for (Edge &edge : edges)
-        edge.state = 0;
+    for (Edge &edge : edges) edge.state = 0;
 
     parent.resize(nodes.size());
     rank.assign(nodes.size(), 0);
-    for (int i = 0; i < (int)nodes.size(); i++)
-        parent[i] = i;
+    for (int i = 0; i < (int)nodes.size(); i++) parent[i] = i;
 
     currentEdge = 0;
     selectedEdge = -1;
     edgesAccepted = 0;
     totalWeight = 0;
+    activeLine = 1;
     animMode = 1;
     mstCompleted = false;
     statusText = "Ready.";
 
-    if (mode == 1)
-        animSpeed = 999999.0f;
-    else
-        animSpeed = 0.8f;
+    if (mode == 1) animSpeed = 999999.0f;
+    else animSpeed = 0.8f;
 }
 
 void MST::updateAnimation()
@@ -271,6 +279,7 @@ void MST::updateAnimation()
         selectedEdge = sortedEdgeIds[currentEdge];
         edges[selectedEdge].state = 1;
         const Edge &edge = edges[selectedEdge];
+        activeLine = 2;
         statusText = TextFormat("Check %d-%d (%d).", nodes[edge.u].label, nodes[edge.v].label, edge.weight);
         animMode = 2;
     }
@@ -284,11 +293,13 @@ void MST::updateAnimation()
             unionSets(ur, vr);
             edgesAccepted++;
             totalWeight += e.weight;
+            activeLine = 3;
             statusText = TextFormat("Accept %d-%d.", nodes[e.u].label, nodes[e.v].label);
         }
         else
         {
             e.state = 3;
+            activeLine = 4;
             statusText = TextFormat("Reject %d-%d. Cycle.", nodes[e.u].label, nodes[e.v].label);
         }
 
@@ -300,7 +311,10 @@ void MST::updateAnimation()
             animMode = 0;
             mstCompleted = true;
             for (auto &e : edges) if (e.state == 0) e.state = 3;
-            statusText = TextFormat("MST complete.");
+            if (edgesAccepted == (int)nodes.size() - 1)
+                statusText = "MST complete.";
+            else
+                statusText = "Graph is disconnected. MST cannot connect all nodes.";
         } else animMode = 1;
     }
 }
@@ -310,6 +324,7 @@ void MST::captureSnapshot()
     Snapshot sn;
     sn.currentEdge = currentEdge;
     sn.selectedEdge = selectedEdge;
+    sn.activeLine = activeLine;
     sn.animMode = animMode;
     sn.edgesAccepted = edgesAccepted;
     sn.totalWeight = totalWeight;
@@ -328,6 +343,7 @@ void MST::restoreSnapshot(const Snapshot &sn)
 {
     currentEdge = sn.currentEdge;
     selectedEdge = sn.selectedEdge;
+    activeLine = sn.activeLine;
     animMode = sn.animMode;
     edgesAccepted = sn.edgesAccepted;
     totalWeight = sn.totalWeight;
@@ -387,7 +403,7 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
 {
     static Vector2 inputScroll = { 0.0f, 0.0f };
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
-    makeGuiLabel(x, y, "Initialize MST Graph");
+    makeGuiLabel(x, y, "Initialize Graph");
 
     if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
         mst.randomize();
@@ -406,17 +422,15 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
 
 static void DrawOperationPanel(float x, float y, MST &mst)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 200 }, 1, BLACK);
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 1, BLACK);
     makeGuiLabel(x, y, "Operations");
 
     int curState = GuiGetState();
     if (mst.nodes.empty() || mst.edges.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Generate MST"))
-        mst.startMSTAnimation();
+    if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Generate MST")) mst.startMSTAnimation();
     GuiSetState(curState);
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear"))
-        mst.clear();
+    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear")) mst.clear();
 }
 
 static void DrawStatusPanel(float x, float y, MST &mst)
@@ -462,8 +476,8 @@ void MST::drawGraph()
         unsigned char al = 255;
 
         if (e.state == 0) { if (animMode || mstCompleted) { c = DARKGRAY; al = 100; } }
-        else if (e.state == 1) { c = ORANGE; th = 4.0f; }
-        else if (e.state == 2) { c = GREEN; th = 4.0f; }
+        else if (e.state == 1) { c = ORANGE; th = 3.0f; }
+        else if (e.state == 2) { c = GREEN; th = 3.0f; }
         else if (e.state == 3) { c = DARKGRAY; al = 100; }
 
         c.a = al;
@@ -489,7 +503,7 @@ void runMST(AppState &currentState)
 {
     static char inputBuffer[2048] = "1 2 10\n2 3 5\n1 3 15";
     static bool editMode = false;
-    const float statusX = 1400.0f;
+    const float statusX = 1350.0f;
     const float statusY = 40.0f;
 
     ClearBackground(GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
@@ -498,9 +512,11 @@ void runMST(AppState &currentState)
     float X = 60, Y = 150;
     DrawForwardButton(875, 800, myMST);
     DrawBackwardButton(725, 800, myMST);
+    DrawCodePanel(mstCodePanel, code_panel, "Kruskal Pseudocode", mstCodeLines, myMST.activeLine);
 
     bool isBusy = (myMST.animMode != 0);
     if (isBusy) GuiSetState(STATE_DISABLED);
+
     DrawToggle(X, Y, myMST);
     DrawInitPanel(X, Y + 125, myMST, inputBuffer, editMode);
     DrawOperationPanel(X, Y + 500, myMST);

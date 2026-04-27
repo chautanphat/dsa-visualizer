@@ -3,7 +3,6 @@
 
 #include "raylib.h"
 #include "common.h"
-#include "code_viewer.h"
 #include <vector>
 
 struct Heap
@@ -26,7 +25,7 @@ struct Heap
         int sz;
         int animMode;
         int curIdx, targetIdx;
-        // int activeLine;
+        int activeLine;
     };
 
     std::vector<Node*> arr;
@@ -55,6 +54,7 @@ struct Heap
     Vector2 startPosA, startPosB;
     float moveTimer = 0.0f;
     float moveDuration = 0.8f;
+    int activeLine = -1;
 
     int mode = 0;
 

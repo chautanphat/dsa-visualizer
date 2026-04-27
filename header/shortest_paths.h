@@ -1,12 +1,12 @@
-#ifndef MST_H
-#define MST_H
+#ifndef SHORTEST_PATHS_H
+#define SHORTEST_PATHS_H
 
 #include "raylib.h"
 #include "common.h"
 #include <vector>
 #include <string>
 
-struct MST
+struct DIJKSTRA
 {
     struct Node
     {
@@ -21,7 +21,7 @@ struct MST
         int id;
         int u, v;
         int weight;
-        int state; // 0 = unexplored, 1 = selected, 2 = accepted, 3 = rejected
+        int state; // 0 = normal, 1 = checking, 2 = predecessor tree
     };
 
     struct Snapshot
@@ -33,63 +33,64 @@ struct MST
         };
 
         std::vector<EdgeState> edgeStates;
-        std::vector<int> parent;
-        std::vector<int> rank;
+        std::vector<int> distances;
+        std::vector<int> predecessor;
+        std::vector<bool> finalized;
+        std::vector<int> pendingEdges;
         int currentEdge;
         int selectedEdge;
+        int activeNode;
         int activeLine;
         int animMode;
-        int edgesAccepted;
-        int totalWeight;
-        bool mstCompleted;
+        bool dijkstraCompleted;
         std::string statusText;
     };
 
     std::vector<Node> nodes;
     std::vector<Edge> edges;
-    std::vector<int> sortedEdgeIds;
-
-    std::vector<int> parent;
-    std::vector<int> rank;
+    std::vector<int> distances;
+    std::vector<int> predecessor;
+    std::vector<bool> finalized;
+    std::vector<int> pendingEdges;
 
     int currentEdge = -1;
     int selectedEdge = -1;
+    int activeNode = -1;
     int activeLine = -1;
-    int edgesAccepted = 0;
-    int totalWeight = 0;
 
     int animMode = 0;
     float animTimer = 0.0f;
     float animSpeed = 0.8f;
-    bool mstCompleted = false;
+    bool dijkstraCompleted = false;
 
     std::string statusText;
 
     int draggingNode = -1;
     Vector2 dragOffset = { 0.0f, 0.0f };
+    Vector2 dragStartMouse = { 0.0f, 0.0f };
+    int sourceNode = -1;
 
     int mode = 0;
 
     std::vector<Snapshot> history;
 
-    MST();
-    ~MST();
+    DIJKSTRA() = default;
+    ~DIJKSTRA() = default;
 
     void clear();
     void drawGraph();
     void randomize();
     bool manualUpload(const std::string &input);
-    void startMSTAnimation();
+    void startDijkstraAnimation();
     void updateAnimation();
     void captureSnapshot();
     void restoreSnapshot(const Snapshot &sn);
 
     void calculateNodePositions();
-    void rebuildSortedEdges();
-    int findSet(int v);
-    void unionSets(int a, int b);
+    void resetDistances();
+    void sync();
 };
 
-void runMST(AppState &currentState);
+void runDijkstra(AppState &currentState);
 
 #endif
