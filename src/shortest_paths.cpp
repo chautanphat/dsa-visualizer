@@ -495,6 +495,7 @@ void runDijkstra(AppState &currentState)
     float x = 60.0f, y = 150.0f;
     DrawForwardButton(875, 800, myDijkstra);
     DrawBackwardButton(725, 800, myDijkstra);
+    DrawCodePanel(dijkstraCodePanel, code_panel, "Dijkstra Pseudocode", dijkstraCodeLines, myDijkstra.activeLine);
 
     bool isBusy = (myDijkstra.animMode != 0);
     if (isBusy) GuiSetState(STATE_DISABLED);
@@ -503,7 +504,6 @@ void runDijkstra(AppState &currentState)
     DrawInitPanel(x, y + 125, myDijkstra, inputBuffer, editMode);
     DrawOperationPanel(x, y + 500, myDijkstra);
     DrawStatusPanel(1350.0f, 40.0f, myDijkstra);
-    DrawCodePanel(dijkstraCodePanel, code_panel, "Dijkstra Pseudocode", dijkstraCodeLines, myDijkstra.activeLine);
-    
+
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

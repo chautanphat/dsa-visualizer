@@ -512,14 +512,15 @@ void runMST(AppState &currentState)
     float X = 60, Y = 150;
     DrawForwardButton(875, 800, myMST);
     DrawBackwardButton(725, 800, myMST);
+    DrawCodePanel(mstCodePanel, code_panel, "Kruskal Pseudocode", mstCodeLines, myMST.activeLine);
 
     bool isBusy = (myMST.animMode != 0);
     if (isBusy) GuiSetState(STATE_DISABLED);
+
     DrawToggle(X, Y, myMST);
     DrawInitPanel(X, Y + 125, myMST, inputBuffer, editMode);
     DrawOperationPanel(X, Y + 500, myMST);
     DrawStatusPanel(statusX, statusY, myMST);
-    DrawCodePanel(mstCodePanel, code_panel, "Kruskal Pseudocode", mstCodeLines, myMST.activeLine);
     
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }
