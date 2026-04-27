@@ -12,20 +12,36 @@ const float startY = 100.0f;
 const float delta_x = 512.0f;
 const float delta_y = 128.0f;
 
-// std::vector<std::string> pushCode =
-// {
-//     "void Push(int val):",                   // 0
-//     "   arr.push_back(val)",                  // 1 (Thêm vào cuối)
-//     "   cur = sz - 1",                        // 2
-//     "   while (cur > 0):",                    // 3
-//     "       p = (cur - 1) / 2",                 // 4 (Tìm nút cha)
-//     "       if (arr[cur] < arr[p]):",           // 5 (So sánh - Giả sử Min Heap)
-//     "           swap(arr[cur], arr[p])",          // 6 (Hoán đổi)
-//     "           cur = p",                         // 7 (Cập nhật vị trí)
-//     "       else: break"                        // 8 (Dừng lại)
-// };
 
 static Heap myHeap;
+static CodePanel heapCodePanel;
+
+static const std::vector<std::string> heapPushCode =
+{
+    "arr.push_back(val)",
+    "while (cur > 0):",
+    "    p = (cur - 1) / 2",
+    "    if (arr[cur] > arr[p]):",
+    "        swap(arr[cur], arr[p])",
+    "        cur = p",
+    "    else: break"
+};
+
+static const std::vector<std::string> heapPopCode =
+{
+    "delete arr[0] and move arr[sz - 1] to arr[0]",
+    "cur = 0",
+    "while (cur < sz):",
+    "    largest = cur",
+    "    if arr[left] > arr[largest]: largest = left",
+    "    if arr[right] > arr[largest]: largest = right",
+    "    if largest == cur: break",
+    "    swap(arr[cur], arr[largest])",
+    "    cur = largest"
+};
+
+static const std::vector<std::string>* heapCurrentCode = &heapPushCode;
+static std::string heapCurrentCodeTitle = "Max Heap Push";
 
 Heap::Node::Node(int val, float _x, float _y, float _delta_x, Node* _parent) : value(val), x(_x), y(_y), delta_x(_delta_x), parent(_parent), left(nullptr), right(nullptr) {}
 
@@ -131,6 +147,7 @@ void Heap::clear()
             arr[i] = nullptr;
         }
     root = nullptr;
+    activeLine = -1;
 }
 
 static void DrawForwardButton(float x, float y, Heap& heap)
@@ -238,6 +255,8 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
 
 void Heap::startPushAnimation(int value)
 {
+    heapCurrentCode = &heapPushCode;
+    heapCurrentCodeTitle = "Max Heap Push";
     history.clear();
     insertNodeOnly(value);
 
@@ -250,6 +269,7 @@ void Heap::startPushAnimation(int value)
     curIdx = sz - 1;
     targetIdx = (curIdx > 0) ? (curIdx - 1) / 2 : -1;
     animTimer = 0.0f;
+    activeLine = 0;
 
     if (mode == 1) animSpeed = 999999.0f;
     else animSpeed = 0.8f;
@@ -257,6 +277,8 @@ void Heap::startPushAnimation(int value)
 
 void Heap::startPopAnimation()
 {
+    heapCurrentCode = &heapPopCode;
+    heapCurrentCodeTitle = "Max Heap Pop";
     history.clear();
     if (sz <= 0 || animMode != 0 || isMoving) return;
 
@@ -270,6 +292,7 @@ void Heap::startPopAnimation()
     curIdx = 0; 
     targetIdx = -1; 
     animTimer = 0.0f;
+    activeLine = 0;
 
     if (mode == 1) animSpeed = 999999.0f;
     else animSpeed = 0.8f;
@@ -301,8 +324,7 @@ void Heap::updateAnimation()
                 
                 animMode = 6; 
                 animTimer = 0.0f;
-            } 
-            else 
+            } else 
             {
                 if (moveIdxA != -1 && moveIdxB != -1) 
                 {
@@ -311,6 +333,8 @@ void Heap::updateAnimation()
                     arr[moveIdxB]->vX = arr[moveIdxB]->x; arr[moveIdxB]->vY = arr[moveIdxB]->y;
                     curIdx = moveIdxB;
                     targetIdx = -1;
+                    if (animMode == 1) activeLine = 5;
+                    else if (animMode == 2) activeLine = 8;
                 } else if (moveIdxA != -1)
                 {
                     arr[moveIdxA]->vX = arr[moveIdxA]->x; 
@@ -342,13 +366,15 @@ void Heap::updateAnimation()
 
     if (targetIdx == -1) 
     {
-        if (animMode == 1 && curIdx > 0) targetIdx = (curIdx - 1) / 2;
+        if (animMode == 1 && curIdx > 0) { targetIdx = (curIdx - 1) / 2; activeLine = 3; }
         else if (animMode == 2) 
         {
+            activeLine = 4;
             int left = curIdx * 2 + 1, right = curIdx * 2 + 2, largest = curIdx;
             if (left < sz && arr[left]->value > arr[largest]->value) largest = left;
             if (right < sz && arr[right]->value > arr[largest]->value) largest = right;
             if (largest != curIdx) targetIdx = largest;
+            else activeLine = 6;
         }
     }
 
@@ -363,7 +389,7 @@ void Heap::updateAnimation()
 
         if (mode == 1) animSpeed = 999999.0f; 
 
-        if (animMode == 3) animMode = 4;
+        if (animMode == 3) { animMode = 4; activeLine = 0; }
         else if (animMode == 4)
         {
             animMode = 5;
@@ -372,12 +398,14 @@ void Heap::updateAnimation()
             moveIdxB = 0;
             curIdx = sz - 1;
             targetIdx = 0;
+            activeLine = 0;
         }
         else if (animMode == 6)
         {
             animMode = 2; 
             curIdx = 0;
             targetIdx = -1;
+            activeLine = 1;
         }
         else if (animMode == 1)
         {
@@ -388,8 +416,9 @@ void Heap::updateAnimation()
                     isMoving = true;
                     moveIdxA = curIdx;
                     moveIdxB = targetIdx;
-                } else animMode = 0,targetIdx = -1;
-            } else animMode = 0, targetIdx = -1;
+                    activeLine = 4;
+                } else { animMode = 0; targetIdx = -1; activeLine = 6; }
+            } else { animMode = 0; targetIdx = -1; activeLine = 1; }
         }
         else if (animMode == 2)
         {
@@ -398,8 +427,9 @@ void Heap::updateAnimation()
                 isMoving = true;
                 moveIdxA = curIdx;
                 moveIdxB = targetIdx;
+                activeLine = 7;
             } 
-            else animMode = 0, targetIdx = -1;
+            else { animMode = 0; targetIdx = -1; activeLine = 6; }
         }
     }
 }
@@ -411,6 +441,7 @@ void Heap::captureSnapshot()
     snapshot.animMode = animMode;
     snapshot.curIdx = curIdx;
     snapshot.targetIdx = targetIdx;
+    snapshot.activeLine = activeLine;
 
     for (int i = 0; i < sz; i++) snapshot.values.push_back(arr[i]->value);
     
@@ -423,6 +454,7 @@ void Heap::restoreSnapshot(const Snapshot& snapshot)
     animMode = snapshot.animMode;
     curIdx = snapshot.curIdx;
     targetIdx = snapshot.targetIdx;
+    activeLine = snapshot.activeLine;
 
     for (int i = 0; i < sz; i++) arr[i]->value = snapshot.values[i];
 
@@ -510,6 +542,8 @@ void runHeap(AppState &currentState)
     
     DrawForwardButton(875, 800, myHeap);
     DrawBackwardButton(725, 800, myHeap);
+
+    DrawCodePanel(heapCodePanel, code_panel, heapCurrentCodeTitle, *heapCurrentCode, myHeap.activeLine);
 
     bool isBusy = (myHeap.animMode != 0 || myHeap.isMoving);
     if (isBusy) GuiSetState(STATE_DISABLED);
