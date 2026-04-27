@@ -302,7 +302,7 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     if (panel.isCollapsed)
     {
         Rectangle expandBtn = { panel.bounds.x + panel.bounds.width - 80.0f, panel.bounds.y + 8.0f, 80.0f, 30.0f };
-        if (GuiButton(expandBtn, "< Code")) panel.isCollapsed = false;
+        if (GuiButton(expandBtn, "#114#Code")) panel.isCollapsed = false;
         return;
     }
 
@@ -359,7 +359,7 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     DrawText(panel.title.c_str(), (int)(panel.bounds.x + 14.0f), (int)(panel.bounds.y + 10.0f), 22, DARKBLUE);
 
     Rectangle collapseBtn = { panel.bounds.x + panel.bounds.width - 34.0f, panel.bounds.y + 8.0f, 24.0f, 24.0f };
-    if (GuiButton(collapseBtn, ">")) panel.isCollapsed = true;
+    if (GuiButton(collapseBtn, "#115#")) panel.isCollapsed = true;
 
     GuiScrollPanel(body, NULL, content, &panel.scroll, &view);
     BeginScissorMode((int)view.x, (int)view.y, (int)view.width, (int)view.height);
