@@ -463,22 +463,41 @@ static void DrawToggle(float x, float y, LinkedList& list)
     }
 }
 
-static void DrawForwardButton(float x, float y, LinkedList& list)
+static void DrawAnimationControls(float centerX, float y, LinkedList& list)
 {
-    GuiSetState(STATE_NORMAL);
-    if (list.mode != 1 || list.animMode == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) list.animSpeed = 0.0f; 
-    GuiSetState(STATE_NORMAL);
-}
+    float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
-static void DrawBackwardButton(float x, float y, LinkedList& list)
-{
-    if (list.mode != 1 || list.history.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
+    GuiSetState((list.mode == 1 && !list.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    {
+        LinkedList::Snapshot firstState = list.history.front();
+        list.history.clear();
+        list.restoreSnapshot(firstState);
+        if (list.mode == 1) list.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         LinkedList::Snapshot lastState = list.history.back();
         list.history.pop_back();
         list.restoreSnapshot(lastState);
+        if (list.mode == 1) list.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    GuiSetState((list.mode == 1 && list.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) list.animSpeed = 0.0f; 
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    {
+        while (list.animMode != 0)
+        {
+            list.animSpeed = 0.0f;
+            list.animTimer = 99999.0f;
+            list.drawLinkedList(430, 250);
+        }
         if (list.mode == 1) list.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
@@ -598,8 +617,7 @@ void runLinkedList(AppState &currentState)
     myAppList.drawLinkedList(430, 250);
     float X = 60, Y = 250;
 
-    DrawForwardButton(875, 800, myAppList);
-    DrawBackwardButton(725, 800, myAppList);
+    DrawAnimationControls(800, 800, myAppList);
 
     DrawCodePanel(listCodePanel, code_panel, listCurrentCodeTitle, *listCurrentCode, myAppList.activeLine);
 

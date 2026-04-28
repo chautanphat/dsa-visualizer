@@ -191,25 +191,42 @@ void AVL::calculatePositions(Node* node, float currentX, float currentY, float h
     if (node->right != nullptr) calculatePositions(node->right, currentX + hGap, currentY + delta_y, hGap / 2.0f);
 }
 
-static void DrawForwardButton(float x, float y, AVL& avl)
+static void DrawAnimationControls(float centerX, float y, AVL& avl)
 {
-    GuiSetState(STATE_NORMAL);
-    if (avl.mode != 1 || avl.animMode == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) 
-    {
-        avl.animSpeed = 0.0f; 
-    }
-    GuiSetState(STATE_NORMAL);
-}
+    float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
-static void DrawBackwardButton(float x, float y, AVL& avl)
-{
-    if (avl.mode != 1 || avl.history.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
+    GuiSetState((avl.mode == 1 && !avl.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    {
+        AVL::Snapshot firstState = avl.history.front();
+        avl.history.clear();
+        avl.restoreSnapshot(firstState);
+        if (avl.mode == 1) avl.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         AVL::Snapshot lastState = avl.history.back();
         avl.history.pop_back();
         avl.restoreSnapshot(lastState);
+        if (avl.mode == 1) avl.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    GuiSetState((avl.mode == 1 && avl.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) avl.animSpeed = 0.0f; 
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    {
+        while (avl.animMode != 0 || avl.isMoving)
+        {
+            avl.animSpeed = 0.0f;
+            avl.moveTimer = 99999.0f;
+            avl.animTimer = 99999.0f;
+            avl.updateAnimation();
+        }
         if (avl.mode == 1) avl.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
@@ -836,8 +853,7 @@ void runAVL(AppState &currentState)
 
     float X = 60, Y = 150;
     
-    DrawForwardButton(875, 800, myAVL);
-    DrawBackwardButton(725, 800, myAVL);
+    DrawAnimationControls(800, 800, myAVL);
 
     DrawCodePanel(avlCodePanel, code_panel, avlCurrentCodeTitle, *avlCurrentCode, myAVL.activeLine);
 

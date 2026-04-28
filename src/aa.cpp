@@ -158,25 +158,42 @@ void AA::calculatePositions(Node* node, float currentX, float currentY, float hG
     if (node->right != nullptr) calculatePositions(node->right, currentX + hGap, currentY + delta_y, hGap / 2.0f);
 }
 
-static void DrawForwardButton(float x, float y, AA& AA)
+static void DrawAnimationControls(float centerX, float y, AA& AA)
 {
-    GuiSetState(STATE_NORMAL);
-    if (AA.mode != 1 || AA.animMode == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) 
-    {
-        AA.animSpeed = 0.0f; 
-    }
-    GuiSetState(STATE_NORMAL);
-}
+    float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
-static void DrawBackwardButton(float x, float y, AA& AA)
-{
-    if (AA.mode != 1 || AA.history.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
+    GuiSetState((AA.mode == 1 && !AA.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    {
+        AA::Snapshot firstState = AA.history.front();
+        AA.history.clear();
+        AA.restoreSnapshot(firstState);
+        if (AA.mode == 1) AA.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         AA::Snapshot lastState = AA.history.back();
         AA.history.pop_back();
         AA.restoreSnapshot(lastState);
+        if (AA.mode == 1) AA.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    GuiSetState((AA.mode == 1 && AA.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) AA.animSpeed = 0.0f; 
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    {
+        while (AA.animMode != 0 || AA.isMoving)
+        {
+            AA.animSpeed = 0.0f;
+            AA.moveTimer = 99999.0f;
+            AA.animTimer = 99999.0f;
+            AA.updateAnimation();
+        }
         if (AA.mode == 1) AA.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
@@ -799,8 +816,7 @@ void runAA(AppState &currentState)
 
     float X = 60, Y = 150;
     
-    DrawForwardButton(875, 800, myAA);
-    DrawBackwardButton(725, 800, myAA);
+    DrawAnimationControls(800, 800, myAA);
 
     DrawCodePanel(aaCodePanel, code_panel, aaCurrentCodeTitle, *aaCurrentCode, myAA.activeLine);
 
