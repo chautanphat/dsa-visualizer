@@ -460,7 +460,7 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
     if (DrawCustomButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
         mst.manualUpload(inputBuf);
 
-    makeGuiLabel(x, y + 145, "Edges (u, v w):");
+    makeGuiLabel(x, y + 145, "Edges (u v w):");
     DrawMultiLineEditor((Rectangle){ x, y + 175, 300, 110 }, inputBuf, 2048, editMode, inputScroll);
 }
 

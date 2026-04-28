@@ -436,7 +436,7 @@ static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, 
         }
     }
     if (DrawCustomButton((Rectangle){ x, y + 90, 300, 35 }, "Manual")) dijkstra.manualUpload(inputBuf);
-    makeGuiLabel(x, y + 145, "Edges (u, v w):");
+    makeGuiLabel(x, y + 145, "Edges (u v w):");
     DrawMultiLineEditor((Rectangle){ x, y + 175, 300, 110 }, inputBuf, 2048, editMode, inputScroll);
 }
 
@@ -531,7 +531,7 @@ void DIJKSTRA::drawGraph()
 
         const char *distText = (i < (int)distances.size()) ? DistanceText(distances[i]) : "INF";
         int dWidth = MeasureTextEx(regularFont, distText, 18, 1).x;
-        DrawTextEx(regularFont, distText, {p.x - dWidth / 2.0f, p.y - 52}, 18, 1, DARKBLUE);
+        DrawTextEx(regularFont, distText, {p.x - dWidth / 2.0f, p.y - 52}, 20, 1, DARKBLUE);
     }
 }
 
