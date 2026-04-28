@@ -32,6 +32,9 @@ static const std::vector<std::string> dijkstraCodeLines =
     "    finalize u"
 };
 
+static int speedActive = 2;
+static const float speedValues[] = { 0.25f, 0.5f, 1.0f, 1.5f, 2.0f };
+
 static bool sameEdge(const DIJKSTRA::Edge &edge, int a, int b)
 {
     return (edge.u == a && edge.v == b) || (edge.u == b && edge.v == a);
@@ -227,7 +230,7 @@ void DIJKSTRA::startDijkstraAnimation()
 void DIJKSTRA::updateAnimation()
 {
     if (animMode == 0 || nodes.empty()) return;
-    animTimer += GetFrameTime();
+    animTimer += GetFrameTime() * speedValues[speedActive];
     if (animTimer < animSpeed) return;
 
     captureSnapshot();
@@ -399,6 +402,9 @@ static void DrawToggle(float x, float y, DIJKSTRA &dijkstra)
     makeGuiLabel(x + 45, y - 30, "Animation Mode:");
     GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &dijkstra.mode);
     if (dijkstra.mode != oldMode) changeSpeed(dijkstra);
+
+    makeGuiLabel(120, 25, "Speed:");
+    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, bool &editMode)

@@ -26,6 +26,9 @@ static const std::vector<std::string> mstCodeLines =
     "    otherwise reject edge",
 };
 
+static int speedActive = 2;
+static const float speedValues[] = { 0.25f, 0.5f, 1.0f, 1.5f, 2.0f };
+
 MST::MST() {}
 MST::~MST() {}
 
@@ -267,7 +270,7 @@ void MST::updateAnimation()
 {
     if (animMode == 0 || nodes.empty()) return;
 
-    animTimer += GetFrameTime();
+    animTimer += GetFrameTime() * speedValues[speedActive];
     if (animTimer < animSpeed) return;
 
     captureSnapshot();
@@ -417,6 +420,9 @@ static void DrawToggle(float x, float y, MST &mst)
         if (mst.mode == 1) mst.animSpeed = 999999.0f;
         else mst.animSpeed = 0.8f;
     }
+
+    makeGuiLabel(120, 25, "Speed:");
+    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &editMode)

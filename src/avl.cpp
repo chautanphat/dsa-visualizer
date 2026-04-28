@@ -52,6 +52,9 @@ static const std::vector<std::string> avlSearchCode =
 static const std::vector<std::string>* avlCurrentCode = &avlInsertCode;
 static std::string avlCurrentCodeTitle = "AVL Tree Insert";
 
+static int speedActive = 2;
+static const float speedValues[] = { 0.25f, 0.5f, 1.0f, 1.5f, 2.0f };
+
 AVL ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), bf(0), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
 
 AVL::AVL() : sz(0), root(nullptr) { arr.clear(); }
@@ -244,6 +247,9 @@ static void DrawToggle(float x, float y, AVL& avl)
         if (avl.mode == 1) avl.animSpeed = 999999.0f; 
         else avl.animSpeed = 0.8f;
     }
+
+    makeGuiLabel(120, 25, "Speed:");
+    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& editMode)
@@ -420,7 +426,7 @@ void AVL::updateAnimation()
 {
     if (isMoving) 
     {
-        moveTimer += GetFrameTime();
+        moveTimer += GetFrameTime() * speedValues[speedActive];
         float t = moveTimer / moveDuration;
 
         if (t >= 1.0f)
@@ -444,7 +450,7 @@ void AVL::updateAnimation()
 
     if (animMode == 0) return;
 
-    animTimer += GetFrameTime();
+    animTimer += GetFrameTime() * speedValues[speedActive];
     float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.8f;
 
     if (animTimer >= safeSpeed) 

@@ -50,6 +50,9 @@ static const std::vector<std::string> listDeleteCode =
 static const std::vector<std::string>* listCurrentCode = &listAddTailCode;
 static std::string listCurrentCodeTitle = "Linked List Add Tail";
 
+static int speedActive = 2;
+static const float speedValues[] = { 0.25f, 0.5f, 1.0f, 1.5f, 2.0f };
+
 LinkedList::Node::Node(int val) : value(val), next(nullptr), box({0, 0, 0, 0}) {}
 
 LinkedList::LinkedList() : head(nullptr), sz(0) {}
@@ -244,7 +247,7 @@ void LinkedList::drawLinkedList(float startX, float startY)
         }
         float progress = 0.0f;
 
-        animTimer += GetFrameTime(); 
+        animTimer += GetFrameTime() * speedValues[speedActive]; 
         
         if (animTimer > pauseTime)
         {
@@ -462,6 +465,9 @@ static void DrawToggle(float x, float y, LinkedList& list)
         if (list.mode == 1) list.animSpeed = 999999.0f; 
         else list.animSpeed = 0.5f;
     }
+
+    makeGuiLabel(120, 25, "Speed:");
+    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawAnimationControls(float centerX, float y, LinkedList& list)

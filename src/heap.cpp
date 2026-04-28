@@ -44,6 +44,9 @@ static const std::vector<std::string> heapPopCode =
 static const std::vector<std::string>* heapCurrentCode = &heapPushCode;
 static std::string heapCurrentCodeTitle = "Max Heap Push";
 
+static int speedActive = 2;
+static const float speedValues[] = { 0.25f, 0.5f, 1.0f, 1.5f, 2.0f };
+
 Heap::Node::Node(int val, float _x, float _y, float _delta_x, Node* _parent) : value(val), x(_x), y(_y), delta_x(_delta_x), parent(_parent), left(nullptr), right(nullptr) {}
 
 Heap::Heap() : arr(31, nullptr), sz(0), root(nullptr) {}
@@ -204,6 +207,9 @@ static void DrawToggle(float x, float y, Heap& heap)
         if (heap.mode == 1) heap.animSpeed = 999999.0f; 
         else heap.animSpeed = 0.8f;
     }
+
+    makeGuiLabel(120, 25, "Speed:");
+    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& editMode)
@@ -337,7 +343,7 @@ void Heap::updateAnimation()
 
     if (isMoving) 
     {
-        moveTimer += GetFrameTime();
+        moveTimer += GetFrameTime() * speedValues[speedActive];
         float t = moveTimer / moveDuration;
 
         if (t >= 1.0f) 
@@ -411,7 +417,7 @@ void Heap::updateAnimation()
         }
     }
 
-    animTimer += GetFrameTime();
+    animTimer += GetFrameTime() * speedValues[speedActive];
     float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.8f;
 
     if (animTimer >= safeSpeed) 

@@ -54,6 +54,9 @@ static const std::vector<std::string> searchCode =
 static const std::vector<std::string>* aaCurrentCode = &insertCode;
 static std::string aaCurrentCodeTitle = "AA Tree Insert";
 
+static int speedActive = 2;
+static const float speedValues[] = { 0.25f, 0.5f, 1.0f, 1.5f, 2.0f };
+
 AA ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), level(1), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
 
 AA::AA() : sz(0), root(nullptr) { arr.clear(); }
@@ -211,6 +214,9 @@ static void DrawToggle(float x, float y, AA& AA)
         if (AA.mode == 1) AA.animSpeed = 999999.0f; 
         else AA.animSpeed = 0.8f;
     }
+
+    makeGuiLabel(120, 25, "Speed:");
+    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, AA& AA, char* inputBuf, bool& editMode)
@@ -385,7 +391,7 @@ void AA::updateAnimation()
 {
     if (isMoving) 
     {
-        moveTimer += GetFrameTime();
+        moveTimer += GetFrameTime() * speedValues[speedActive];
         float t = moveTimer / moveDuration;
 
         if (t >= 1.0f)
@@ -409,7 +415,7 @@ void AA::updateAnimation()
 
     if (animMode == 0) return;
 
-    animTimer += GetFrameTime();
+    animTimer += GetFrameTime() * speedValues[speedActive];
     float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.8f;
 
     if (animTimer >= safeSpeed) 
