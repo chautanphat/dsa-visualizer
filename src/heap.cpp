@@ -239,7 +239,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
 
 static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 250 }, 1, BLACK);
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 220 }, 1, BLACK);
 
     makeGuiLabel(x, y, "Operations");
     makeGuiLabel(x, y + 35, "Value:");
