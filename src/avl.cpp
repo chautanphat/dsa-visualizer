@@ -799,14 +799,20 @@ static void draw(AVL::Node* cur, AVL& tree)
     int myIdx = cur->id; 
     Vector2 drawPos = {cur->vX, cur->vY};
 
+    Color bgColor = WHITE;
+    Color txtColor = BLACK;
+
     if (tree.animMode != 0)
     {
-        if (myIdx == tree.curIdx) DrawCircleV(drawPos, 35, ORANGE);
-        if (myIdx == tree.targetIdx) DrawCircleV(drawPos, 35, RED);
+        if (myIdx == tree.curIdx) bgColor = ORANGE;
+        if (myIdx == tree.targetIdx) { bgColor = RED; txtColor = WHITE; }
     }
 
     DrawText(TextFormat("%d", cur->bf), drawPos.x - 5, drawPos.y - 55, 20, RED);
-    DrawNode(drawPos, cur->value, 20, 30, 4);
+    DrawCircleV(drawPos, 30, bgColor);
+    DrawRing(drawPos, 26, 30, 0.0f, 360.0f, 40, BLACK);
+    const char* text = TextFormat("%d", cur->value);
+    DrawText(text, drawPos.x - MeasureText(text, 20)/2, drawPos.y - 10, 20, txtColor);
 }
 
 void AVL::drawTree()

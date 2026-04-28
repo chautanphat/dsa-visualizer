@@ -508,8 +508,13 @@ void MST::drawGraph()
     for (auto &n : nodes)
     {
         Vector2 p = {n.x, n.y};
-        if (n.id == ha || n.id == hb) DrawCircleV(p, 35, ORANGE);
-        DrawNode(p, n.label, 20, 30, 4);
+        Color bgColor = WHITE;
+        if (n.id == ha || n.id == hb) bgColor = ORANGE;
+        
+        DrawCircleV(p, 30, bgColor);
+        DrawRing(p, 26, 30, 0.0f, 360.0f, 40, BLACK);
+        const char *nodeText = TextFormat("%d", n.label);
+        DrawText(nodeText, p.x - MeasureText(nodeText, 20) / 2, p.y - 10, 20, BLACK);
     }
 }
 
