@@ -7,6 +7,9 @@
 #include <cstdlib>
 #include <sstream>
 
+extern Font regularFont;
+extern Font monoFont;
+
 static int editorCursorIndex = 0;
 
 static int CountEditorLines(const char *text)
@@ -114,7 +117,7 @@ static int GetCursorFromMouse(Rectangle bounds, Vector2 scroll, const char *buff
 
     for (int i = lineStart; i <= lineEnd; i++)
     {
-        int width = MeasureText(TextFormat("%.*s", i - lineStart, buffer + lineStart), 20);
+        int width = MeasureTextEx(monoFont, TextFormat("%.*s", i - lineStart, buffer + lineStart), 20, 1).x;
         int distance = width - (int)localX;
         if (distance < 0) distance = -distance;
         if (i == lineStart || distance <= bestDistance)
@@ -134,7 +137,7 @@ static void EnsureCursorVisible(Rectangle bounds, Vector2 &scroll, const char *b
     for (int i = 0; i < lineStart; i++)
         if (buffer[i] == '\n') cursorLine++;
 
-    int cursorX = MeasureText(TextFormat("%.*s", cursorIndex - lineStart, buffer + lineStart), 20);
+    int cursorX = MeasureTextEx(monoFont, TextFormat("%.*s", cursorIndex - lineStart, buffer + lineStart), 20, 1).x;
     float visibleLeft = -scroll.x;
     float visibleRight = -scroll.x + bounds.width - 24.0f - padding;
     float visibleTop = -scroll.y;
@@ -243,7 +246,7 @@ bool DrawCustomButton(Rectangle bounds, const char* text)
     int fontSize = GuiGetStyle(DEFAULT, TEXT_SIZE); 
     if (fontSize == 0) fontSize = 20; 
     
-    int textWidth = (displayText[0] != '\0') ? MeasureText(displayText, fontSize) : 0;
+    int textWidth = (displayText[0] != '\0') ? MeasureTextEx(regularFont, displayText, fontSize, 1).x : 0;
     int iconSize = (iconId != -1) ? 16 : 0;
     int spacing = (iconId != -1 && displayText[0] != '\0') ? 6 : 0;
     
@@ -257,7 +260,7 @@ bool DrawCustomButton(Rectangle bounds, const char* text)
         startX += iconSize + spacing;
     }
     
-    if (displayText[0] != '\0') DrawText(displayText, startX, startY, fontSize, textColor);
+    if (displayText[0] != '\0') DrawTextEx(regularFont, displayText, {(float)startX, (float)startY}, fontSize, 1, textColor);
 
     return clicked;
 }
@@ -316,11 +319,11 @@ void DrawCustomToggleGroup(Rectangle bounds, const char *text, int *active)
 
         int fontSize = GuiGetStyle(DEFAULT, TEXT_SIZE); 
         if (fontSize == 0) fontSize = 20; 
-        int textWidth = MeasureText(options[i].c_str(), fontSize);
+        int textWidth = MeasureTextEx(regularFont, options[i].c_str(), fontSize, 1).x;
         int startX = (int)toggleBounds.x + ((int)toggleBounds.width - textWidth) / 2;
         int startY = (int)toggleBounds.y + ((int)toggleBounds.height - fontSize) / 2;
         
-        DrawText(options[i].c_str(), startX, startY, fontSize, textColor);
+        DrawTextEx(regularFont, options[i].c_str(), {(float)startX, (float)startY}, fontSize, 1, textColor);
 
         if (clicked) *active = i;
     }
@@ -328,25 +331,25 @@ void DrawCustomToggleGroup(Rectangle bounds, const char *text, int *active)
 
 void makeGuiLabel(float x, float y, const char* text)
 {
-    DrawText(text, x, y, 20, BLACK);
+    DrawTextEx(regularFont, text, {x, y}, 20, 1, BLACK);
     // GuiLabel((Rectangle){ x, y, (float)MeasureText(text, GuiGetStyle(DEFAULT, TEXT_SIZE)), 30 }, text);
 }
 
 void DrawTextInBox(Rectangle box, const char* text, int fontSize, Color textColor)
 {
-    int textWidth = MeasureText(text, fontSize);
+    int textWidth = MeasureTextEx(regularFont, text, fontSize, 1).x;
     float textX = box.x + (box.width / 2) - (textWidth / 2.0f);
     float textY = box.y + (box.height / 2) - (fontSize / 2.0f);
-    DrawText(text, (int)textX, (int)textY, fontSize, textColor);
+    DrawTextEx(regularFont, text, {textX, textY}, fontSize, 1, textColor);
 }
 
 void DrawNumberInBox(Rectangle box, int number, int fontSize, Color textColor)
 {
     const char* text = TextFormat("%d", number);
-    int textWidth = MeasureText(text, fontSize);
+    int textWidth = MeasureTextEx(regularFont, text, fontSize, 1).x;
     float textX = box.x + (box.width / 2) - (textWidth / 2.0f);
     float textY = box.y + (box.height / 2) - (fontSize / 2.0f);
-    DrawText(text, (int)textX, (int)textY, fontSize, textColor);
+    DrawTextEx(regularFont, text, {textX, textY}, fontSize, 1, textColor);
 }
 
 void DrawNode(Vector2 center, int value, int fontSize, float radius, float borderThick)
@@ -354,8 +357,8 @@ void DrawNode(Vector2 center, int value, int fontSize, float radius, float borde
     DrawCircleV(center, radius, WHITE);
     DrawRing(center, radius - borderThick, radius, 0.0f, 360.0f, 40, BLACK);
     const char* text = TextFormat("%d", value);
-    int textWidth = MeasureText(text, fontSize);
-    DrawText(text, center.x - textWidth/2, center.y - fontSize/2, fontSize, BLACK);
+    int textWidth = MeasureTextEx(regularFont, text, fontSize, 1).x;
+    DrawTextEx(regularFont, text, {center.x - textWidth/2.0f, center.y - fontSize/2.0f}, fontSize, 1, BLACK);
 }
 
 void DrawMultiLineEditor(Rectangle bounds, char *buffer, int maxSize, bool &editMode, Vector2 &scroll)
@@ -397,7 +400,7 @@ void DrawMultiLineEditor(Rectangle bounds, char *buffer, int maxSize, bool &edit
         if (buffer[i] == '\n' || buffer[i] == '\0')
         {
             int count = i - start;
-            DrawText(TextFormat("%.*s", count, buffer + start), (int)drawX, (int)(drawY + line * lineHeight), 20, BLACK);
+            DrawTextEx(monoFont, TextFormat("%.*s", count, buffer + start), {drawX, drawY + line * lineHeight}, 20, 1, BLACK);
             start = i + 1;
             line++;
         }
@@ -410,7 +413,7 @@ void DrawMultiLineEditor(Rectangle bounds, char *buffer, int maxSize, bool &edit
             if (buffer[i] == '\n') cursorLine++;
 
         int lastLineStart = GetLineStart(buffer, editorCursorIndex);
-        int cursorOffset = MeasureText(TextFormat("%.*s", editorCursorIndex - lastLineStart, buffer + lastLineStart), 20);
+        int cursorOffset = MeasureTextEx(monoFont, TextFormat("%.*s", editorCursorIndex - lastLineStart, buffer + lastLineStart), 20, 1).x;
         DrawLine((int)(drawX + cursorOffset), (int)(drawY + cursorLine * lineHeight), (int)(drawX + cursorOffset), (int)(drawY + cursorLine * lineHeight + 20), BLACK);
     }
 
@@ -441,7 +444,7 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     float maxTextWidth = 0.0f;
     for (const std::string &line : panel.lines)
     {
-        float width = (float)MeasureText(line.c_str(), panel.fontSize);
+        float width = MeasureTextEx(monoFont, line.c_str(), panel.fontSize, 1).x;
         if (width > maxTextWidth) maxTextWidth = width;
     }
 
@@ -478,7 +481,7 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
 
     DrawRectangleRounded(panel.bounds, 0.06f, 8, Fade(RAYWHITE, 0.96f));
     DrawRectangleRoundedLinesEx(panel.bounds, 0.06f, 8, 2.0f, LIGHTGRAY);
-    DrawText(panel.title.c_str(), (int)(panel.bounds.x + 14.0f), (int)(panel.bounds.y + 10.0f), 22, DARKBLUE);
+    DrawTextEx(regularFont, panel.title.c_str(), {panel.bounds.x + 14.0f, panel.bounds.y + 10.0f}, 20, 1, DARKBLUE);
 
     Rectangle collapseBtn = { panel.bounds.x + panel.bounds.width - 34.0f, panel.bounds.y + 8.0f, 24.0f, 24.0f };
     if (DrawCustomButton(collapseBtn, "#115#")) panel.isCollapsed = true;
@@ -495,7 +498,7 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
         if (i == panel.activeLine)
             DrawRectangleRounded({ drawX - 6.0f, y - 2.0f, std::max(body.width - 16.0f, contentWidth), (float)panel.lineHeight }, 0.18f, 6, Fade(ORANGE, 0.28f));
 
-        DrawText(panel.lines[i].c_str(), (int)(drawX + 4.0f), (int)y + 3, panel.fontSize, (i == panel.activeLine) ? MAROON : BLACK);
+        DrawTextEx(monoFont, panel.lines[i].c_str(), {drawX + 4.0f, y + 3}, panel.fontSize, 1, (i == panel.activeLine) ? MAROON : BLACK);
     }
 
     EndScissorMode();

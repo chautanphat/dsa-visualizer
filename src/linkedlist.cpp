@@ -8,6 +8,9 @@
 #include <fstream>
 #include <vector>
 
+extern Font regularFont;
+extern Font monoFont;
+
 static LinkedList myAppList;
 static CodePanel listCodePanel;
 
@@ -224,7 +227,7 @@ void LinkedList::drawLinkedList(float startX, float startY)
             DrawRectangleRec(cur->box, bg);
             DrawRectangleLinesEx(cur->box, 2, BLACK);
             DrawNumberInBox(cur->box, cur->value, 20, fg);
-            if (animMode != 0 && cur == animPtr) DrawText("cur", cur->box.x + 35, cur->box.y - 20, 16, currentAnimColor);
+            if (animMode != 0 && cur == animPtr) DrawTextEx(regularFont, "cur", {cur->box.x + 35, cur->box.y - 20}, 16, 1, currentAnimColor);
         }
 
         if (cur->next)
@@ -521,10 +524,12 @@ static void DrawInitPanel(float x, float y, LinkedList& list, char* inputBuf, bo
     if (DrawCustomButton((Rectangle){ x + 200, y + 30, 120, 30 }, "Upload")) list.fileUpload();
     if (DrawCustomButton((Rectangle){ x + 350, y + 30, 120, 30 }, "Manual")) list.manualUpload(inputBuf);
     
+    GuiSetFont(monoFont);
     if (GuiTextBox((Rectangle){ x + 500, y + 30, 250, 30 }, inputBuf, 256, editMode))
     {
         editMode = !editMode;
     }
+    GuiSetFont(regularFont);
 }
 
 static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool& editModeVal)
@@ -532,15 +537,17 @@ static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool&
     makeGuiLabel(x, y, "Add a node");
     makeGuiLabel(x, y + 35, "Value:");
 
+    GuiSetFont(monoFont);
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal))
     {
         editModeVal = !editModeVal;
     }
+    GuiSetFont(regularFont);
     
     int curState = GuiGetState();
     if (list.sz >= 9) {
         GuiSetState(STATE_DISABLED);
-        DrawText("Maximum 9 nodes reached.", (int)x, (int)y + 112, 16, RED);
+        DrawTextEx(regularFont, "Maximum 9 nodes reached.", {x, y + 112}, 16, 1, RED);
     }
 
     if (DrawCustomButton((Rectangle){ x, y + 75, 140, 35 }, "Add to Head"))
@@ -568,8 +575,10 @@ static void DrawUpdatePanel(float x, float y, LinkedList& list, char* idxBuf, bo
     makeGuiLabel(x, y + 35, "Index:");
     makeGuiLabel(x + 160, y + 35, "Value:");
     
+    GuiSetFont(monoFont);
     if (GuiTextBox((Rectangle){ x + 70, y + 35, 65, 25 }, idxBuf, 16, editModeIdx)) editModeIdx = !editModeIdx;
     if (GuiTextBox((Rectangle){ x + 230, y + 35, 65, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
+    GuiSetFont(regularFont);
     
     if (DrawCustomButton((Rectangle){ x, y + 75, 90, 35 }, "Update"))
     {
@@ -599,7 +608,9 @@ static void DrawSearchPanel(float x, float y, LinkedList& list, char* searchBuf,
     makeGuiLabel(x, y, "Search value");
     makeGuiLabel(x, y + 35, "Value:");
     
+    GuiSetFont(monoFont);
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, searchBuf, 16, editModeSearch)) editModeSearch = !editModeSearch;
+    GuiSetFont(regularFont);
     
     if (DrawCustomButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Search"))
     {

@@ -11,6 +11,9 @@
 #include <cmath>
 #include <fstream>
 
+extern Font regularFont;
+extern Font monoFont;
+
 const float graphCenterX = 900.0f;
 const float graphCenterY = 420.0f;
 const float graphRadius = 320.0f;
@@ -453,10 +456,10 @@ static void DrawStatusPanel(float x, float y, DIJKSTRA &dijkstra)
     const char *sourceText = (dijkstra.sourceNode >= 0 && dijkstra.sourceNode < (int)dijkstra.nodes.size())
         ? TextFormat("Selected source: %d", dijkstra.nodes[dijkstra.sourceNode].label)
         : "Selected source: none";
-    DrawText(sourceText, (int)x, (int)y, 20, GREEN);
-    DrawText(dijkstra.statusText.c_str(), (int)x, (int)(y + 25), 20, BLACK);
+    DrawTextEx(regularFont, sourceText, {x, y}, 20, 1, GREEN);
+    DrawTextEx(regularFont, dijkstra.statusText.c_str(), {x, y + 25}, 20, 1, BLACK);
     if (dijkstra.activeNode >= 0 && dijkstra.activeNode < (int)dijkstra.nodes.size())
-        DrawText(TextFormat("Current node: %d", dijkstra.nodes[dijkstra.activeNode].label), (int)x, (int)(y + 50), 20, ORANGE);
+        DrawTextEx(regularFont, TextFormat("Current node: %d", dijkstra.nodes[dijkstra.activeNode].label), {x, y + 50}, 20, 1, ORANGE);
 }
 
 void DIJKSTRA::drawGraph()
@@ -507,7 +510,9 @@ void DIJKSTRA::drawGraph()
         float len = sqrtf(diff.x * diff.x + diff.y * diff.y) + 0.01f;
         Vector2 perp = {-diff.y / len, diff.x / len};
         Vector2 textPos = {mid.x + perp.x * 18.0f, mid.y + perp.y * 18.0f};
-        DrawText(TextFormat("%d", edge.weight), textPos.x - 8, textPos.y - 10, 20, BLACK);
+        const char *wText = TextFormat("%d", edge.weight);
+        int wWidth = MeasureTextEx(regularFont, wText, 20, 1).x;
+        DrawTextEx(regularFont, wText, {textPos.x - wWidth / 2.0f, textPos.y - 10}, 20, 1, BLACK);
     }
 
     for (int i = 0; i < (int)nodes.size(); i++)
@@ -521,10 +526,12 @@ void DIJKSTRA::drawGraph()
         DrawCircleV(p, 30, fillColor);
         DrawRing(p, 26, 30, 0.0f, 360.0f, 40, BLACK);
         const char *nodeText = TextFormat("%d", nodes[i].label);
-        DrawText(nodeText, p.x - MeasureText(nodeText, 20) / 2, p.y - 10, 20, textColor);
+        int nWidth = MeasureTextEx(regularFont, nodeText, 20, 1).x;
+        DrawTextEx(regularFont, nodeText, {p.x - nWidth / 2.0f, p.y - 10}, 20, 1, textColor);
 
         const char *distText = (i < (int)distances.size()) ? DistanceText(distances[i]) : "INF";
-        DrawText(distText, p.x - MeasureText(distText, 18) / 2, p.y - 52, 18, DARKBLUE);
+        int dWidth = MeasureTextEx(regularFont, distText, 18, 1).x;
+        DrawTextEx(regularFont, distText, {p.x - dWidth / 2.0f, p.y - 52}, 18, 1, DARKBLUE);
     }
 }
 

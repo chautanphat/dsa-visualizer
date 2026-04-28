@@ -12,6 +12,9 @@
 #include <cmath>
 #include <fstream>
 
+extern Font regularFont;
+extern Font monoFont;
+
 static const float graphCenterX = 900.0f;
 static const float graphCenterY = 420.0f;
 static const float graphRadius = 320.0f;
@@ -476,8 +479,8 @@ static void DrawOperationPanel(float x, float y, MST &mst)
 
 static void DrawStatusPanel(float x, float y, MST &mst)
 {
-    DrawText(mst.statusText.c_str(), (int)x, (int)y, 20, BLACK);
-    DrawText(TextFormat("Total sum: %d", mst.totalWeight), (int)x, (int)(y + 25), 20, GREEN);
+    DrawTextEx(regularFont, mst.statusText.c_str(), {x, y}, 20, 1, BLACK);
+    DrawTextEx(regularFont, TextFormat("Total sum: %d", mst.totalWeight), {x, y + 25}, 20, 1, GREEN);
 }
 
 void MST::drawGraph()
@@ -529,7 +532,9 @@ void MST::drawGraph()
         float len = sqrtf(diff.x * diff.x + diff.y * diff.y) + 0.01f;
         Vector2 perp = {-diff.y / len, diff.x / len};
         Vector2 textPos = {mid.x + perp.x * 18.0f, mid.y + perp.y * 18.0f};
-        DrawText(TextFormat("%d", e.weight), textPos.x - 10, textPos.y - 10, 20, BLACK);
+        const char *wText = TextFormat("%d", e.weight);
+        int wWidth = MeasureTextEx(regularFont, wText, 20, 1).x;
+        DrawTextEx(regularFont, wText, {textPos.x - wWidth / 2.0f, textPos.y - 10}, 20, 1, BLACK);
     }
 
     for (auto &n : nodes)
@@ -541,7 +546,8 @@ void MST::drawGraph()
         DrawCircleV(p, 30, bgColor);
         DrawRing(p, 26, 30, 0.0f, 360.0f, 40, BLACK);
         const char *nodeText = TextFormat("%d", n.label);
-        DrawText(nodeText, p.x - MeasureText(nodeText, 20) / 2, p.y - 10, 20, BLACK);
+        int nWidth = MeasureTextEx(regularFont, nodeText, 20, 1).x;
+        DrawTextEx(regularFont, nodeText, {p.x - nWidth / 2.0f, p.y - 10}, 20, 1, BLACK);
     }
 }
 

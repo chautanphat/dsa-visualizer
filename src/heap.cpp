@@ -8,6 +8,9 @@
 #include <sstream>
 #include <fstream>
 
+extern Font regularFont;
+extern Font monoFont;
+
 const float startX = 1000.0f;
 const float startY = 100.0f;
 const float delta_x = 512.0f;
@@ -259,7 +262,9 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
         while (iss >> value && heap.sz < 31) heap.push(value);
     }
 
+    GuiSetFont(monoFont);
     if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
+    GuiSetFont(regularFont);
 }
 
 static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
@@ -269,13 +274,15 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
     makeGuiLabel(x, y, "Operations");
     makeGuiLabel(x, y + 35, "Value:");
     
+    GuiSetFont(monoFont);
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
+    GuiSetFont(regularFont);
     
     int curState = GuiGetState();
     if (heap.sz >= 31)
     {
         GuiSetState(STATE_DISABLED);
-        DrawText("Maximum 31 nodes reached.", (int)x, (int)y + 112, 16, RED);
+        DrawTextEx(regularFont, "Maximum 31 nodes reached.", {x, y + 112}, 16, 1, RED);
     }
     if (DrawCustomButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
@@ -563,7 +570,8 @@ static void draw(Heap::Node* cur, Heap& heap)
         DrawCircleV(drawPos, 30, bgColor);
         DrawRing(drawPos, 26, 30, 0.0f, 360.0f, 40, BLACK);
         const char* text = TextFormat("%d", cur->value);
-        DrawText(text, drawPos.x - MeasureText(text, 20)/2, drawPos.y - 10, 20, txtColor);
+        int tWidth = MeasureTextEx(regularFont, text, 20, 1).x;
+        DrawTextEx(regularFont, text, {drawPos.x - tWidth/2.0f, drawPos.y - 10}, 20, 1, txtColor);
     }
 }
 
