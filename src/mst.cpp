@@ -420,9 +420,12 @@ static void DrawToggle(float x, float y, MST &mst)
         if (mst.mode == 1) mst.animSpeed = 999999.0f;
         else mst.animSpeed = 0.8f;
     }
+}
 
-    makeGuiLabel(120, 25, "Speed:");
-    DrawCustomToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+static void DrawSpeedToggle(float x, float y)
+{
+    makeGuiLabel(x, y - 30, "Speed:");
+    DrawCustomToggleGroup((Rectangle){ x, y, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &editMode)
@@ -560,9 +563,10 @@ void runMST(AppState &currentState)
     if (isBusy) GuiSetState(STATE_DISABLED);
 
     DrawToggle(X, Y, myMST);
-    DrawInitPanel(X, Y + 125, myMST, inputBuffer, editMode);
-    DrawOperationPanel(X, Y + 500, myMST);
+    DrawInitPanel(X, Y + 70, myMST, inputBuffer, editMode);
+    DrawOperationPanel(X, Y + 440, myMST);
     DrawStatusPanel(statusX, statusY, myMST);
+    DrawSpeedToggle(X + 50, 800);
     
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

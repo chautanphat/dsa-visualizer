@@ -465,9 +465,12 @@ static void DrawToggle(float x, float y, LinkedList& list)
         if (list.mode == 1) list.animSpeed = 999999.0f; 
         else list.animSpeed = 0.5f;
     }
+}
 
-    makeGuiLabel(120, 25, "Speed:");
-    DrawCustomToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+static void DrawSpeedToggle(float x, float y)
+{
+    makeGuiLabel(x, y - 30, "Speed:");
+    DrawCustomToggleGroup((Rectangle){ x, y, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawAnimationControls(float centerX, float y, LinkedList& list)
@@ -638,6 +641,7 @@ void runLinkedList(AppState &currentState)
     DrawAddPanel(X, Y + 25, myAppList, valBuffer, editModeValue);
     DrawUpdatePanel(X, Y + 150, myAppList, indexBuffer, editModeIndex, updateValBuffer, updateValEditMode);
     DrawSearchPanel(X, Y + 300, myAppList, valSearchBuffer, valSearchEditMode);
+    DrawSpeedToggle(X + 50, 800);
 
     GuiSetState(STATE_NORMAL);
 }

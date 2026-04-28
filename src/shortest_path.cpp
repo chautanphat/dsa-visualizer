@@ -402,9 +402,12 @@ static void DrawToggle(float x, float y, DIJKSTRA &dijkstra)
     makeGuiLabel(x + 45, y - 30, "Animation Mode:");
     DrawCustomToggleGroup((Rectangle){ x - 20, y, 150, 30 }, "Run-at-once;Step-by-step", &dijkstra.mode);
     if (dijkstra.mode != oldMode) changeSpeed(dijkstra);
+}
 
-    makeGuiLabel(120, 25, "Speed:");
-    DrawCustomToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+static void DrawSpeedToggle(float x, float y)
+{
+    makeGuiLabel(x, y - 30, "Speed:");
+    DrawCustomToggleGroup((Rectangle){ x, y, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, bool &editMode)
@@ -542,9 +545,10 @@ void runDijkstra(AppState &currentState)
     if (isBusy) GuiSetState(STATE_DISABLED);
 
     DrawToggle(x, y, myDijkstra);
-    DrawInitPanel(x, y + 125, myDijkstra, inputBuffer, editMode);
-    DrawOperationPanel(x, y + 500, myDijkstra);
+    DrawInitPanel(x, y + 70, myDijkstra, inputBuffer, editMode);
+    DrawOperationPanel(x, y + 440, myDijkstra);
     DrawStatusPanel(1350.0f, 40.0f, myDijkstra);
+    DrawSpeedToggle(x + 50, 800);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

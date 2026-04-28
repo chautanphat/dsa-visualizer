@@ -247,9 +247,12 @@ static void DrawToggle(float x, float y, AVL& avl)
         if (avl.mode == 1) avl.animSpeed = 999999.0f; 
         else avl.animSpeed = 0.8f;
     }
+}
 
-    makeGuiLabel(120, 25, "Speed:");
-    DrawCustomToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+static void DrawSpeedToggle(float x, float y)
+{
+    makeGuiLabel(x, y - 30, "Speed:");
+    DrawCustomToggleGroup((Rectangle){ x, y, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& editMode)
@@ -867,8 +870,9 @@ void runAVL(AppState &currentState)
     if (isBusy) GuiSetState(STATE_DISABLED);
 
     DrawToggle(X, Y, myAVL);
-    DrawInitPanel(X, Y + 125, myAVL, inputBuffer, editMode);
-    DrawOperationPanel(X, Y + 425, myAVL, valBuffer, editModeValue);
+    DrawInitPanel(X, Y + 70, myAVL, inputBuffer, editMode);
+    DrawOperationPanel(X, Y + 340, myAVL, valBuffer, editModeValue);
+    DrawSpeedToggle(X + 50, 800);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

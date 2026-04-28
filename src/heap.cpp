@@ -207,9 +207,12 @@ static void DrawToggle(float x, float y, Heap& heap)
         if (heap.mode == 1) heap.animSpeed = 999999.0f; 
         else heap.animSpeed = 0.8f;
     }
+}
 
-    makeGuiLabel(120, 25, "Speed:");
-    DrawCustomToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+static void DrawSpeedToggle(float x, float y)
+{
+    makeGuiLabel(x, y - 30, "Speed:");
+    DrawCustomToggleGroup((Rectangle){ x, y, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& editMode)
@@ -593,8 +596,9 @@ void runHeap(AppState &currentState)
     if (isBusy) GuiSetState(STATE_DISABLED);
 
     DrawToggle(X, Y, myHeap);
-    DrawInitPanel(X, Y + 125, myHeap, inputBuffer, editMode);
-    DrawUpdatePanel(X, Y + 425, myHeap, valBuffer, editModeValue);
+    DrawInitPanel(X, Y + 70, myHeap, inputBuffer, editMode);
+    DrawUpdatePanel(X, Y + 340, myHeap, valBuffer, editModeValue);
+    DrawSpeedToggle(X + 50, 800);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }
