@@ -9,6 +9,9 @@
 #include <fstream>
 #include <iostream>
 
+extern Font regularFont;
+extern Font monoFont;
+
 const float x_root = 1000.0f;
 const float y_root = 100.0f;
 const float delta_x = 256.0f;
@@ -240,21 +243,24 @@ static void DrawToggle(float x, float y, AVL& avl)
     int oldMode = avl.mode;
 
     makeGuiLabel(x + 45, y - 30, "Animation Mode:");
-    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &avl.mode);
+    DrawCustomToggleGroup((Rectangle){ x - 20, y, 150, 30 }, "Run-at-once;Step-by-step", &avl.mode);
 
     if (avl.mode != oldMode)
     {
         if (avl.mode == 1) avl.animSpeed = 999999.0f; 
         else avl.animSpeed = 0.8f;
     }
+}
 
-    makeGuiLabel(120, 25, "Speed:");
-    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+static void DrawSpeedToggle(float x, float y)
+{
+    makeGuiLabel(x, y - 30, "Speed:");
+    DrawCustomToggleGroup((Rectangle){ x, y, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& editMode)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 0.05f, 8, 1.0f, BLACK);
 
     makeGuiLabel(x, y, "Initialize AVL Tree");
     
@@ -296,23 +302,27 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
         while (iss >> value && avl.sz < 31) avl.insert(value);
     }
 
+    GuiSetFont(monoFont);
     if (GuiTextBox((Rectangle){ x, y + 145, 300, 30 }, inputBuf, 2048, editMode)) editMode = !editMode;
+    GuiSetFont(regularFont);
 }
 
 static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& editModeVal)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 280 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 280 }, 0.05f, 8, 1.0f, BLACK);
 
     makeGuiLabel(x, y, "Operations");
     makeGuiLabel(x, y + 35, "Value:");
     
+    GuiSetFont(monoFont);
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
+    GuiSetFont(regularFont);
     
     int curState = GuiGetState();
     if (avl.sz >= 31)
     {
         GuiSetState(STATE_DISABLED);
-        DrawText("Maximum 31 nodes reached.", (int)x, (int)y + 112, 16, RED);
+        DrawTextEx(regularFont, "Maximum 31 nodes reached.", {x, y + 112}, 16, 1, RED);
     }
     if (DrawCustomButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
@@ -831,11 +841,12 @@ static void draw(AVL::Node* cur, AVL& tree)
         if (myIdx == tree.targetIdx) { bgColor = RED; txtColor = WHITE; }
     }
 
-    DrawText(TextFormat("%d", cur->bf), drawPos.x - 5, drawPos.y - 55, 20, RED);
+    DrawTextEx(regularFont, TextFormat("%d", cur->bf), {drawPos.x - 5, drawPos.y - 55}, 20, 1, RED);
     DrawCircleV(drawPos, 30, bgColor);
     DrawRing(drawPos, 26, 30, 0.0f, 360.0f, 40, BLACK);
     const char* text = TextFormat("%d", cur->value);
-    DrawText(text, drawPos.x - MeasureText(text, 20)/2, drawPos.y - 10, 20, txtColor);
+    int tWidth = MeasureTextEx(regularFont, text, 20, 1).x;
+    DrawTextEx(regularFont, text, {drawPos.x - tWidth/2.0f, drawPos.y - 10}, 20, 1, txtColor);
 }
 
 void AVL::drawTree()
@@ -867,8 +878,9 @@ void runAVL(AppState &currentState)
     if (isBusy) GuiSetState(STATE_DISABLED);
 
     DrawToggle(X, Y, myAVL);
-    DrawInitPanel(X, Y + 125, myAVL, inputBuffer, editMode);
-    DrawOperationPanel(X, Y + 425, myAVL, valBuffer, editModeValue);
+    DrawInitPanel(X, Y + 70, myAVL, inputBuffer, editMode);
+    DrawOperationPanel(X, Y + 340, myAVL, valBuffer, editModeValue);
+    DrawSpeedToggle(X + 50, 800);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

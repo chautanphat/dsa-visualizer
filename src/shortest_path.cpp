@@ -11,6 +11,9 @@
 #include <cmath>
 #include <fstream>
 
+extern Font regularFont;
+extern Font monoFont;
+
 const float graphCenterX = 900.0f;
 const float graphCenterY = 420.0f;
 const float graphRadius = 320.0f;
@@ -400,17 +403,20 @@ static void DrawToggle(float x, float y, DIJKSTRA &dijkstra)
 {
     int oldMode = dijkstra.mode;
     makeGuiLabel(x + 45, y - 30, "Animation Mode:");
-    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &dijkstra.mode);
+    DrawCustomToggleGroup((Rectangle){ x - 20, y, 150, 30 }, "Run-at-once;Step-by-step", &dijkstra.mode);
     if (dijkstra.mode != oldMode) changeSpeed(dijkstra);
+}
 
-    makeGuiLabel(120, 25, "Speed:");
-    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+static void DrawSpeedToggle(float x, float y)
+{
+    makeGuiLabel(x, y - 30, "Speed:");
+    DrawCustomToggleGroup((Rectangle){ x, y, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, bool &editMode)
 {
     static Vector2 inputScroll = { 0.0f, 0.0f };
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 0.05f, 8, 1.0f, BLACK);
     makeGuiLabel(x, y, "Initialize Graph");
     if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random")) dijkstra.randomize();
     if (DrawCustomButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
@@ -436,7 +442,7 @@ static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, 
 
 static void DrawOperationPanel(float x, float y, DIJKSTRA &dijkstra)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 0.05f, 8, 1.0f, BLACK);
     makeGuiLabel(x, y, "Operations");
     int curState = GuiGetState();
     if (dijkstra.nodes.empty() || dijkstra.edges.empty() || dijkstra.sourceNode < 0) GuiSetState(STATE_DISABLED);
@@ -450,10 +456,10 @@ static void DrawStatusPanel(float x, float y, DIJKSTRA &dijkstra)
     const char *sourceText = (dijkstra.sourceNode >= 0 && dijkstra.sourceNode < (int)dijkstra.nodes.size())
         ? TextFormat("Selected source: %d", dijkstra.nodes[dijkstra.sourceNode].label)
         : "Selected source: none";
-    DrawText(sourceText, (int)x, (int)y, 20, GREEN);
-    DrawText(dijkstra.statusText.c_str(), (int)x, (int)(y + 25), 20, BLACK);
+    DrawTextEx(regularFont, sourceText, {x, y}, 20, 1, GREEN);
+    DrawTextEx(regularFont, dijkstra.statusText.c_str(), {x, y + 25}, 20, 1, BLACK);
     if (dijkstra.activeNode >= 0 && dijkstra.activeNode < (int)dijkstra.nodes.size())
-        DrawText(TextFormat("Current node: %d", dijkstra.nodes[dijkstra.activeNode].label), (int)x, (int)(y + 50), 20, ORANGE);
+        DrawTextEx(regularFont, TextFormat("Current node: %d", dijkstra.nodes[dijkstra.activeNode].label), {x, y + 50}, 20, 1, ORANGE);
 }
 
 void DIJKSTRA::drawGraph()
@@ -504,7 +510,9 @@ void DIJKSTRA::drawGraph()
         float len = sqrtf(diff.x * diff.x + diff.y * diff.y) + 0.01f;
         Vector2 perp = {-diff.y / len, diff.x / len};
         Vector2 textPos = {mid.x + perp.x * 18.0f, mid.y + perp.y * 18.0f};
-        DrawText(TextFormat("%d", edge.weight), textPos.x - 8, textPos.y - 10, 20, BLACK);
+        const char *wText = TextFormat("%d", edge.weight);
+        int wWidth = MeasureTextEx(regularFont, wText, 20, 1).x;
+        DrawTextEx(regularFont, wText, {textPos.x - wWidth / 2.0f, textPos.y - 10}, 20, 1, BLACK);
     }
 
     for (int i = 0; i < (int)nodes.size(); i++)
@@ -518,10 +526,12 @@ void DIJKSTRA::drawGraph()
         DrawCircleV(p, 30, fillColor);
         DrawRing(p, 26, 30, 0.0f, 360.0f, 40, BLACK);
         const char *nodeText = TextFormat("%d", nodes[i].label);
-        DrawText(nodeText, p.x - MeasureText(nodeText, 20) / 2, p.y - 10, 20, textColor);
+        int nWidth = MeasureTextEx(regularFont, nodeText, 20, 1).x;
+        DrawTextEx(regularFont, nodeText, {p.x - nWidth / 2.0f, p.y - 10}, 20, 1, textColor);
 
         const char *distText = (i < (int)distances.size()) ? DistanceText(distances[i]) : "INF";
-        DrawText(distText, p.x - MeasureText(distText, 18) / 2, p.y - 52, 18, DARKBLUE);
+        int dWidth = MeasureTextEx(regularFont, distText, 18, 1).x;
+        DrawTextEx(regularFont, distText, {p.x - dWidth / 2.0f, p.y - 52}, 18, 1, DARKBLUE);
     }
 }
 
@@ -542,9 +552,10 @@ void runDijkstra(AppState &currentState)
     if (isBusy) GuiSetState(STATE_DISABLED);
 
     DrawToggle(x, y, myDijkstra);
-    DrawInitPanel(x, y + 125, myDijkstra, inputBuffer, editMode);
-    DrawOperationPanel(x, y + 500, myDijkstra);
+    DrawInitPanel(x, y + 70, myDijkstra, inputBuffer, editMode);
+    DrawOperationPanel(x, y + 440, myDijkstra);
     DrawStatusPanel(1350.0f, 40.0f, myDijkstra);
+    DrawSpeedToggle(x + 50, 800);
 
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

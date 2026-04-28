@@ -12,6 +12,9 @@
 #include <cmath>
 #include <fstream>
 
+extern Font regularFont;
+extern Font monoFont;
+
 static const float graphCenterX = 900.0f;
 static const float graphCenterY = 420.0f;
 static const float graphRadius = 320.0f;
@@ -413,22 +416,25 @@ static void DrawToggle(float x, float y, MST &mst)
 {
     int oldMode = mst.mode;
     makeGuiLabel(x + 45, y - 30, "Animation Mode:");
-    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &mst.mode);
+    DrawCustomToggleGroup((Rectangle){ x - 20, y, 150, 30 }, "Run-at-once;Step-by-step", &mst.mode);
 
     if (mst.mode != oldMode)
     {
         if (mst.mode == 1) mst.animSpeed = 999999.0f;
         else mst.animSpeed = 0.8f;
     }
+}
 
-    makeGuiLabel(120, 25, "Speed:");
-    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+static void DrawSpeedToggle(float x, float y)
+{
+    makeGuiLabel(x, y - 30, "Speed:");
+    DrawCustomToggleGroup((Rectangle){ x, y, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &editMode)
 {
     static Vector2 inputScroll = { 0.0f, 0.0f };
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 0.05f, 8, 1.0f, BLACK);
     makeGuiLabel(x, y, "Initialize Graph");
 
     if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
@@ -460,7 +466,7 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
 
 static void DrawOperationPanel(float x, float y, MST &mst)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 0.05f, 8, 1.0f, BLACK);
     makeGuiLabel(x, y, "Operations");
 
     int curState = GuiGetState();
@@ -473,8 +479,8 @@ static void DrawOperationPanel(float x, float y, MST &mst)
 
 static void DrawStatusPanel(float x, float y, MST &mst)
 {
-    DrawText(mst.statusText.c_str(), (int)x, (int)y, 20, BLACK);
-    DrawText(TextFormat("Total sum: %d", mst.totalWeight), (int)x, (int)(y + 25), 20, GREEN);
+    DrawTextEx(regularFont, mst.statusText.c_str(), {x, y}, 20, 1, BLACK);
+    DrawTextEx(regularFont, TextFormat("Total sum: %d", mst.totalWeight), {x, y + 25}, 20, 1, GREEN);
 }
 
 void MST::drawGraph()
@@ -526,7 +532,9 @@ void MST::drawGraph()
         float len = sqrtf(diff.x * diff.x + diff.y * diff.y) + 0.01f;
         Vector2 perp = {-diff.y / len, diff.x / len};
         Vector2 textPos = {mid.x + perp.x * 18.0f, mid.y + perp.y * 18.0f};
-        DrawText(TextFormat("%d", e.weight), textPos.x - 10, textPos.y - 10, 20, BLACK);
+        const char *wText = TextFormat("%d", e.weight);
+        int wWidth = MeasureTextEx(regularFont, wText, 20, 1).x;
+        DrawTextEx(regularFont, wText, {textPos.x - wWidth / 2.0f, textPos.y - 10}, 20, 1, BLACK);
     }
 
     for (auto &n : nodes)
@@ -538,7 +546,8 @@ void MST::drawGraph()
         DrawCircleV(p, 30, bgColor);
         DrawRing(p, 26, 30, 0.0f, 360.0f, 40, BLACK);
         const char *nodeText = TextFormat("%d", n.label);
-        DrawText(nodeText, p.x - MeasureText(nodeText, 20) / 2, p.y - 10, 20, BLACK);
+        int nWidth = MeasureTextEx(regularFont, nodeText, 20, 1).x;
+        DrawTextEx(regularFont, nodeText, {p.x - nWidth / 2.0f, p.y - 10}, 20, 1, BLACK);
     }
 }
 
@@ -560,9 +569,10 @@ void runMST(AppState &currentState)
     if (isBusy) GuiSetState(STATE_DISABLED);
 
     DrawToggle(X, Y, myMST);
-    DrawInitPanel(X, Y + 125, myMST, inputBuffer, editMode);
-    DrawOperationPanel(X, Y + 500, myMST);
+    DrawInitPanel(X, Y + 70, myMST, inputBuffer, editMode);
+    DrawOperationPanel(X, Y + 440, myMST);
     DrawStatusPanel(statusX, statusY, myMST);
+    DrawSpeedToggle(X + 50, 800);
     
     if (!isBusy) GuiSetState(STATE_NORMAL);
 }

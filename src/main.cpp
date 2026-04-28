@@ -11,6 +11,9 @@
 #include "shortest_path.h"
 #include <ctime>
 
+Font regularFont;
+Font monoFont;
+
 const int screenWidth = 1600;
 const int screenHeight = 900;
 const int targetFPS = 60;
@@ -23,6 +26,10 @@ int main()
     SetRandomSeed(time(NULL));
     InitWindow(screenWidth, screenHeight, "Data Structures Visualizer");
     
+    regularFont = LoadFontEx("fonts/Inter.ttf", 20, 0, 0);
+    monoFont = LoadFontEx("fonts/JetBrainsMono.ttf", 20, 0, 0);
+
+    GuiSetFont(regularFont);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
     GuiSetStyle(BUTTON, BORDER_WIDTH, 1);
     SetTargetFPS(targetFPS);
@@ -62,6 +69,8 @@ int main()
         EndDrawing();
     }
 
+    UnloadFont(regularFont);
+    UnloadFont(monoFont);
     CloseWindow();
     
     return 0;
