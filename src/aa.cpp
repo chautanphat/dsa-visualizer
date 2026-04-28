@@ -163,7 +163,7 @@ static void DrawAnimationControls(float centerX, float y, AA& AA)
     float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
     GuiSetState((AA.mode == 1 && !AA.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
     {
         AA::Snapshot firstState = AA.history.front();
         AA.history.clear();
@@ -172,7 +172,7 @@ static void DrawAnimationControls(float centerX, float y, AA& AA)
     }
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         AA::Snapshot lastState = AA.history.back();
         AA.history.pop_back();
@@ -182,10 +182,10 @@ static void DrawAnimationControls(float centerX, float y, AA& AA)
 
     startX += btnW + gap;
     GuiSetState((AA.mode == 1 && AA.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) AA.animSpeed = 0.0f; 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) AA.animSpeed = 0.0f; 
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
     {
         while (AA.animMode != 0 || AA.isMoving)
         {
@@ -219,7 +219,7 @@ static void DrawInitPanel(float x, float y, AA& AA, char* inputBuf, bool& editMo
 
     makeGuiLabel(x, y, "Initialize AA Tree");
     
-    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
+    if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
     {
         AA.clear(); 
 
@@ -232,7 +232,7 @@ static void DrawInitPanel(float x, float y, AA& AA, char* inputBuf, bool& editMo
         }
     }
 
-    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
+    if (DrawCustomButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
         const char* filters[] = { "*.txt" };
         const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
@@ -249,7 +249,7 @@ static void DrawInitPanel(float x, float y, AA& AA, char* inputBuf, bool& editMo
         }
     }
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
+    if (DrawCustomButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
     { 
         std::istringstream iss(inputBuf);
         int value;
@@ -275,7 +275,7 @@ static void DrawOperationPanel(float x, float y, AA& AA, char* valBuf, bool& edi
         GuiSetState(STATE_DISABLED);
         DrawText("Maximum 31 nodes reached.", (int)x, (int)y + 112, 16, RED);
     }
-    if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
+    if (DrawCustomButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
         int value;
@@ -288,7 +288,7 @@ static void DrawOperationPanel(float x, float y, AA& AA, char* valBuf, bool& edi
     GuiSetState(curState);
 
     if (AA.sz == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"))
+    if (DrawCustomButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"))
     {
         std::istringstream iss(valBuf);
         int value;
@@ -299,7 +299,7 @@ static void DrawOperationPanel(float x, float y, AA& AA, char* valBuf, bool& edi
         }
     }
 
-    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Search"))
+    if (DrawCustomButton((Rectangle){ x, y + 130, 300, 35 }, "Search"))
     {
         std::istringstream iss(valBuf);
         int value;
@@ -309,7 +309,7 @@ static void DrawOperationPanel(float x, float y, AA& AA, char* valBuf, bool& edi
             strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
         }
     }
-    if (GuiButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) AA.clear();
+    if (DrawCustomButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) AA.clear();
 }
 
 void AA::startInsertAnimation(int value)

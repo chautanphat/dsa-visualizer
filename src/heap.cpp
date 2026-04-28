@@ -156,7 +156,7 @@ static void DrawAnimationControls(float centerX, float y, Heap& heap)
     float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
     GuiSetState((heap.mode == 1 && !heap.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
     {
         Heap::Snapshot firstState = heap.history.front();
         heap.history.clear();
@@ -165,7 +165,7 @@ static void DrawAnimationControls(float centerX, float y, Heap& heap)
     }
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         Heap::Snapshot lastState = heap.history.back();
         heap.history.pop_back();
@@ -175,10 +175,10 @@ static void DrawAnimationControls(float centerX, float y, Heap& heap)
 
     startX += btnW + gap;
     GuiSetState((heap.mode == 1 && heap.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) heap.animSpeed = 0.0f; 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) heap.animSpeed = 0.0f; 
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
     {
         while (heap.animMode != 0 || heap.isMoving)
         {
@@ -212,7 +212,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
 
     makeGuiLabel(x, y, "Initialize Heap");
     
-    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
+    if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
     {
         heap.clear(); 
 
@@ -225,7 +225,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
         }
     }
 
-    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
+    if (DrawCustomButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
         const char* filters[] = { "*.txt" };
         const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
@@ -242,7 +242,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
         }
     }
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
+    if (DrawCustomButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
     { 
         std::istringstream iss(inputBuf);
         int value;
@@ -268,7 +268,7 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
         GuiSetState(STATE_DISABLED);
         DrawText("Maximum 31 nodes reached.", (int)x, (int)y + 112, 16, RED);
     }
-    if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
+    if (DrawCustomButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
         int value;
@@ -281,9 +281,9 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
     GuiSetState(curState);
 
     if (heap.sz == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Pop")) heap.startPopAnimation();
+    if (DrawCustomButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Pop")) heap.startPopAnimation();
 
-    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
+    if (DrawCustomButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
 }
 
 void Heap::startPushAnimation(int value)

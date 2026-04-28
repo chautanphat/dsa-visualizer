@@ -371,7 +371,7 @@ static void DrawAnimationControls(float centerX, float y, MST &mst)
     float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
     GuiSetState((mst.mode == 1 && !mst.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#"))
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#129#"))
     {
         MST::Snapshot firstState = mst.history.front();
         mst.history.clear();
@@ -380,7 +380,7 @@ static void DrawAnimationControls(float centerX, float y, MST &mst)
     }
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#"))
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#130#"))
     {
         MST::Snapshot lastState = mst.history.back();
         mst.history.pop_back();
@@ -390,10 +390,10 @@ static void DrawAnimationControls(float centerX, float y, MST &mst)
 
     startX += btnW + gap;
     GuiSetState((mst.mode == 1 && mst.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) mst.animSpeed = 0.0f;
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) mst.animSpeed = 0.0f;
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#"))
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#134#"))
     {
         while (mst.animMode != 0)
         {
@@ -425,10 +425,10 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
     makeGuiLabel(x, y, "Initialize Graph");
 
-    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
+    if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
         mst.randomize();
 
-    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
+    if (DrawCustomButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
         const char* filters[] = { "*.txt" };
         const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
@@ -445,7 +445,7 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
         }
     }
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
+    if (DrawCustomButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
         mst.manualUpload(inputBuf);
 
     makeGuiLabel(x, y + 145, "Edges (u, v w):");
@@ -459,10 +459,10 @@ static void DrawOperationPanel(float x, float y, MST &mst)
 
     int curState = GuiGetState();
     if (mst.nodes.empty() || mst.edges.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y + 35, 300, 35 }, "Generate MST")) mst.startMSTAnimation();
+    if (DrawCustomButton((Rectangle){ x, y + 35, 300, 35 }, "Generate MST")) mst.startMSTAnimation();
     GuiSetState(curState);
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Clear")) mst.clear();
+    if (DrawCustomButton((Rectangle){ x, y + 90, 300, 35 }, "Clear")) mst.clear();
 }
 
 static void DrawStatusPanel(float x, float y, MST &mst)

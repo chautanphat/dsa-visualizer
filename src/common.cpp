@@ -4,6 +4,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 static int editorCursorIndex = 0;
 
@@ -184,22 +185,78 @@ static void HandleMultiLineInput(char *buffer, int maxSize, bool editMode, Recta
 
 bool DrawCustomButton(Rectangle bounds, const char* text)
 {
-    Vector2 mousePoint = GetMousePosition();
-    bool hovering = CheckCollisionPointRec(mousePoint, bounds);
+    int state = GuiGetState(); 
     bool clicked = false;
-
-    Color buttonColor = SKYBLUE;
-    if (hovering)
+    Vector2 mousePoint = GetMousePosition();
+    
+    if (state != STATE_DISABLED) 
     {
-        buttonColor = BLUE;
-        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) buttonColor = DARKBLUE;
-        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) clicked = true;
+        if (CheckCollisionPointRec(mousePoint, bounds)) 
+        {
+            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) state = STATE_PRESSED;
+            else state = STATE_FOCUSED;
+
+            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) clicked = true;
+        } 
+        else state = STATE_NORMAL;
     }
 
-    DrawRectangleRounded(bounds, 0.3, 10, buttonColor);
-    DrawRectangleRoundedLines(bounds, 0.3, 10, WHITE);
-    int textWidth = MeasureText(text, 20);
-    DrawText(text, bounds.x + (bounds.width/2) - (textWidth/2), bounds.y + (bounds.height/2) - 10, 20, WHITE);
+    Color baseColor, textColor;
+    switch (state) 
+    {
+        case STATE_NORMAL:
+            baseColor = Fade(LIGHTGRAY, 0.3f);
+            textColor = DARKGRAY;
+            break;
+        case STATE_FOCUSED:
+            baseColor = Fade(LIGHTGRAY, 0.8f);
+            textColor = BLACK;
+            break;
+        case STATE_PRESSED:
+            baseColor = LIGHTGRAY;                 
+            textColor = BLACK;
+            break;
+        case STATE_DISABLED:
+        default:
+            baseColor = Fade(LIGHTGRAY, 0.1f);
+            textColor = Fade(DARKGRAY, 0.4f);  
+            break;
+    }
+
+    float roundness = 0.5f;
+    int segments = 16;
+    DrawRectangleRounded(bounds, roundness, segments, baseColor);
+
+    int iconId = -1;
+    const char *displayText = text;
+    if (text[0] == '#' && text[1] >= '0' && text[1] <= '9') 
+    {
+        const char *hashEnd = strchr(text + 1, '#');
+        if (hashEnd != NULL) 
+        {
+            iconId = atoi(text + 1);
+            displayText = hashEnd + 1;
+        }
+    }
+
+    int fontSize = GuiGetStyle(DEFAULT, TEXT_SIZE); 
+    if (fontSize == 0) fontSize = 20; 
+    
+    int textWidth = (displayText[0] != '\0') ? MeasureText(displayText, fontSize) : 0;
+    int iconSize = (iconId != -1) ? 16 : 0;
+    int spacing = (iconId != -1 && displayText[0] != '\0') ? 6 : 0;
+    
+    int totalWidth = iconSize + spacing + textWidth;
+    int startX = (int)bounds.x + ((int)bounds.width - totalWidth) / 2;
+    int startY = (int)bounds.y + ((int)bounds.height - fontSize) / 2;
+
+    if (iconId != -1) 
+    {
+        GuiDrawIcon(iconId, startX, (int)bounds.y + ((int)bounds.height - 16) / 2, 1, textColor);
+        startX += iconSize + spacing;
+    }
+    
+    if (displayText[0] != '\0') DrawText(displayText, startX, startY, fontSize, textColor);
 
     return clicked;
 }
@@ -302,7 +359,7 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     if (panel.isCollapsed)
     {
         Rectangle expandBtn = { panel.bounds.x + panel.bounds.width - 80.0f, panel.bounds.y + 8.0f, 80.0f, 30.0f };
-        if (GuiButton(expandBtn, "#114#Code")) panel.isCollapsed = false;
+        if (DrawCustomButton(expandBtn, "#114#Code")) panel.isCollapsed = false;
         return;
     }
 
@@ -359,7 +416,7 @@ void DrawCodePanel(CodePanel &panel, Rectangle bounds, const std::string &title,
     DrawText(panel.title.c_str(), (int)(panel.bounds.x + 14.0f), (int)(panel.bounds.y + 10.0f), 22, DARKBLUE);
 
     Rectangle collapseBtn = { panel.bounds.x + panel.bounds.width - 34.0f, panel.bounds.y + 8.0f, 24.0f, 24.0f };
-    if (GuiButton(collapseBtn, "#115#")) panel.isCollapsed = true;
+    if (DrawCustomButton(collapseBtn, "#115#")) panel.isCollapsed = true;
 
     GuiScrollPanel(body, NULL, content, &panel.scroll, &view);
     BeginScissorMode((int)view.x, (int)view.y, (int)view.width, (int)view.height);

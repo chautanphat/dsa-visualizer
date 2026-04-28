@@ -469,7 +469,7 @@ static void DrawAnimationControls(float centerX, float y, LinkedList& list)
     float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
     GuiSetState((list.mode == 1 && !list.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
     {
         LinkedList::Snapshot firstState = list.history.front();
         list.history.clear();
@@ -478,7 +478,7 @@ static void DrawAnimationControls(float centerX, float y, LinkedList& list)
     }
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         LinkedList::Snapshot lastState = list.history.back();
         list.history.pop_back();
@@ -488,10 +488,10 @@ static void DrawAnimationControls(float centerX, float y, LinkedList& list)
 
     startX += btnW + gap;
     GuiSetState((list.mode == 1 && list.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) list.animSpeed = 0.0f; 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) list.animSpeed = 0.0f; 
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
     {
         while (list.animMode != 0)
         {
@@ -508,9 +508,9 @@ static void DrawInitPanel(float x, float y, LinkedList& list, char* inputBuf, bo
 {
     DrawRectangleLinesEx((Rectangle){ x, y, 800, 80 }, 1, BLACK);
     
-    if (GuiButton((Rectangle){ x + 50, y + 30, 120, 30 }, "Random")) list.randomize();
-    if (GuiButton((Rectangle){ x + 200, y + 30, 120, 30 }, "Upload")) list.fileUpload();
-    if (GuiButton((Rectangle){ x + 350, y + 30, 120, 30 }, "Manual")) list.manualUpload(inputBuf);
+    if (DrawCustomButton((Rectangle){ x + 50, y + 30, 120, 30 }, "Random")) list.randomize();
+    if (DrawCustomButton((Rectangle){ x + 200, y + 30, 120, 30 }, "Upload")) list.fileUpload();
+    if (DrawCustomButton((Rectangle){ x + 350, y + 30, 120, 30 }, "Manual")) list.manualUpload(inputBuf);
     
     if (GuiTextBox((Rectangle){ x + 500, y + 30, 250, 30 }, inputBuf, 256, editMode))
     {
@@ -534,7 +534,7 @@ static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool&
         DrawText("Maximum 9 nodes reached.", (int)x, (int)y + 112, 16, RED);
     }
 
-    if (GuiButton((Rectangle){ x, y + 75, 140, 35 }, "Add to Head"))
+    if (DrawCustomButton((Rectangle){ x, y + 75, 140, 35 }, "Add to Head"))
     { 
         std::istringstream iss(valBuf);
         int value;
@@ -542,7 +542,7 @@ static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool&
         strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
     }
     
-    if (GuiButton((Rectangle){ x + 150, y + 75, 140, 35 }, "Add to Tail"))
+    if (DrawCustomButton((Rectangle){ x + 150, y + 75, 140, 35 }, "Add to Tail"))
     {
         std::istringstream iss(valBuf);
         int value;
@@ -562,7 +562,7 @@ static void DrawUpdatePanel(float x, float y, LinkedList& list, char* idxBuf, bo
     if (GuiTextBox((Rectangle){ x + 70, y + 35, 65, 25 }, idxBuf, 16, editModeIdx)) editModeIdx = !editModeIdx;
     if (GuiTextBox((Rectangle){ x + 230, y + 35, 65, 25 }, valBuf, 16, editModeVal)) editModeVal = !editModeVal;
     
-    if (GuiButton((Rectangle){ x, y + 75, 90, 35 }, "Update"))
+    if (DrawCustomButton((Rectangle){ x, y + 75, 90, 35 }, "Update"))
     {
         std::istringstream issIndex(idxBuf);
         std::istringstream issValue(valBuf);
@@ -573,14 +573,14 @@ static void DrawUpdatePanel(float x, float y, LinkedList& list, char* idxBuf, bo
     int curState = GuiGetState();
     if (list.head == nullptr) GuiSetState(STATE_DISABLED);
 
-    if (GuiButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Delete"))
+    if (DrawCustomButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Delete"))
     {
         std::istringstream issIndex(idxBuf);
         int index;
         if (issIndex >> index && index >= 0 && list.animMode == 0) list.startDeleteAnimation(index);
     }
     
-    if (GuiButton((Rectangle){ x + 200, y + 75, 90, 35 }, "Clear")) list.clear(); 
+    if (DrawCustomButton((Rectangle){ x + 200, y + 75, 90, 35 }, "Clear")) list.clear(); 
 
     GuiSetState(curState);
 }
@@ -592,7 +592,7 @@ static void DrawSearchPanel(float x, float y, LinkedList& list, char* searchBuf,
     
     if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, searchBuf, 16, editModeSearch)) editModeSearch = !editModeSearch;
     
-    if (GuiButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Search"))
+    if (DrawCustomButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Search"))
     {
         std::istringstream issValue(searchBuf);
         int value;
