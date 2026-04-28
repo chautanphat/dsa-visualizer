@@ -44,6 +44,9 @@ static const std::vector<std::string> heapPopCode =
 static const std::vector<std::string>* heapCurrentCode = &heapPushCode;
 static std::string heapCurrentCodeTitle = "Max Heap Push";
 
+static int speedActive = 2;
+static const float speedValues[] = { 0.25f, 0.5f, 1.0f, 1.5f, 2.0f };
+
 Heap::Node::Node(int val, float _x, float _y, float _delta_x, Node* _parent) : value(val), x(_x), y(_y), delta_x(_delta_x), parent(_parent), left(nullptr), right(nullptr) {}
 
 Heap::Heap() : arr(31, nullptr), sz(0), root(nullptr) {}
@@ -156,7 +159,7 @@ static void DrawAnimationControls(float centerX, float y, Heap& heap)
     float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
     GuiSetState((heap.mode == 1 && !heap.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
     {
         Heap::Snapshot firstState = heap.history.front();
         heap.history.clear();
@@ -165,7 +168,7 @@ static void DrawAnimationControls(float centerX, float y, Heap& heap)
     }
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         Heap::Snapshot lastState = heap.history.back();
         heap.history.pop_back();
@@ -175,10 +178,10 @@ static void DrawAnimationControls(float centerX, float y, Heap& heap)
 
     startX += btnW + gap;
     GuiSetState((heap.mode == 1 && heap.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) heap.animSpeed = 0.0f; 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) heap.animSpeed = 0.0f; 
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
     {
         while (heap.animMode != 0 || heap.isMoving)
         {
@@ -204,6 +207,9 @@ static void DrawToggle(float x, float y, Heap& heap)
         if (heap.mode == 1) heap.animSpeed = 999999.0f; 
         else heap.animSpeed = 0.8f;
     }
+
+    makeGuiLabel(120, 25, "Speed:");
+    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& editMode)
@@ -212,7 +218,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
 
     makeGuiLabel(x, y, "Initialize Heap");
     
-    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
+    if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
     {
         heap.clear(); 
 
@@ -225,7 +231,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
         }
     }
 
-    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
+    if (DrawCustomButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
         const char* filters[] = { "*.txt" };
         const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
@@ -242,7 +248,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
         }
     }
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
+    if (DrawCustomButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
     { 
         std::istringstream iss(inputBuf);
         int value;
@@ -268,7 +274,7 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
         GuiSetState(STATE_DISABLED);
         DrawText("Maximum 31 nodes reached.", (int)x, (int)y + 112, 16, RED);
     }
-    if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
+    if (DrawCustomButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
         int value;
@@ -281,9 +287,9 @@ static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& ed
     GuiSetState(curState);
 
     if (heap.sz == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Pop")) heap.startPopAnimation();
+    if (DrawCustomButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Pop")) heap.startPopAnimation();
 
-    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
+    if (DrawCustomButton((Rectangle){ x, y + 130, 300, 35 }, "Clear")) heap.clear();
 }
 
 void Heap::startPushAnimation(int value)
@@ -337,7 +343,7 @@ void Heap::updateAnimation()
 
     if (isMoving) 
     {
-        moveTimer += GetFrameTime();
+        moveTimer += GetFrameTime() * speedValues[speedActive];
         float t = moveTimer / moveDuration;
 
         if (t >= 1.0f) 
@@ -411,7 +417,7 @@ void Heap::updateAnimation()
         }
     }
 
-    animTimer += GetFrameTime();
+    animTimer += GetFrameTime() * speedValues[speedActive];
     float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.8f;
 
     if (animTimer >= safeSpeed) 

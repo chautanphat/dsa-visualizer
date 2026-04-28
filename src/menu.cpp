@@ -20,19 +20,19 @@ void DrawMenu(AppState &currentState)
     float startX = (GetScreenWidth() - totalGridWidth) / 2.0f;
     float startY = topY + 150;
 
-    if (GuiButton((Rectangle){ startX, startY, btnWidth, btnHeight }, "LINKED LIST"))
+    if (DrawCustomButton((Rectangle){ startX, startY, btnWidth, btnHeight }, "LINKED LIST"))
         currentState = LINKED_LIST;
-    if (GuiButton((Rectangle){ startX + (btnWidth + paddingX), startY, btnWidth, btnHeight }, "HEAP"))
+    if (DrawCustomButton((Rectangle){ startX + (btnWidth + paddingX), startY, btnWidth, btnHeight }, "HEAP"))
         currentState = HEAP;
-    if (GuiButton((Rectangle){ startX + (btnWidth + paddingX) * 2, startY, btnWidth, btnHeight }, "AVL TREE"))
+    if (DrawCustomButton((Rectangle){ startX + (btnWidth + paddingX) * 2, startY, btnWidth, btnHeight }, "AVL TREE"))
         currentState = AVLTREE;
 
     float secondRowY = startY + btnHeight + paddingY;
 
-    if (GuiButton((Rectangle){ startX, secondRowY, btnWidth, btnHeight }, "AA TREE"))
+    if (DrawCustomButton((Rectangle){ startX, secondRowY, btnWidth, btnHeight }, "AA TREE"))
         currentState = AATREE;
-    if (GuiButton((Rectangle){ startX + (btnWidth + paddingX), secondRowY, btnWidth, btnHeight }, "MINIMUM SPANNING TREE"))
+    if (DrawCustomButton((Rectangle){ startX + (btnWidth + paddingX), secondRowY, btnWidth, btnHeight }, "MINIMUM SPANNING TREE"))
         currentState = MINIMUM_SPANNING_TREE;
-    if (GuiButton((Rectangle){ startX + (btnWidth + paddingX) * 2, secondRowY, btnWidth, btnHeight }, "SHORTEST PATH"))
+    if (DrawCustomButton((Rectangle){ startX + (btnWidth + paddingX) * 2, secondRowY, btnWidth, btnHeight }, "SHORTEST PATH"))
         currentState = SHORTEST_PATH;
 }

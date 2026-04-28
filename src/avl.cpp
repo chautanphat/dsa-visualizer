@@ -52,6 +52,9 @@ static const std::vector<std::string> avlSearchCode =
 static const std::vector<std::string>* avlCurrentCode = &avlInsertCode;
 static std::string avlCurrentCodeTitle = "AVL Tree Insert";
 
+static int speedActive = 2;
+static const float speedValues[] = { 0.25f, 0.5f, 1.0f, 1.5f, 2.0f };
+
 AVL ::Node::Node(int val, float _x, float _y, int _id, Node* _parent) : value(val), height(1), bf(0), id(_id), x(_x), y(_y), vX(_x), vY(_y), parent(_parent), left(nullptr), right(nullptr) {}
 
 AVL::AVL() : sz(0), root(nullptr) { arr.clear(); }
@@ -196,7 +199,7 @@ static void DrawAnimationControls(float centerX, float y, AVL& avl)
     float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
     GuiSetState((avl.mode == 1 && !avl.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
     {
         AVL::Snapshot firstState = avl.history.front();
         avl.history.clear();
@@ -205,7 +208,7 @@ static void DrawAnimationControls(float centerX, float y, AVL& avl)
     }
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         AVL::Snapshot lastState = avl.history.back();
         avl.history.pop_back();
@@ -215,10 +218,10 @@ static void DrawAnimationControls(float centerX, float y, AVL& avl)
 
     startX += btnW + gap;
     GuiSetState((avl.mode == 1 && avl.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) avl.animSpeed = 0.0f; 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) avl.animSpeed = 0.0f; 
 
     startX += btnW + gap;
-    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    if (DrawCustomButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
     {
         while (avl.animMode != 0 || avl.isMoving)
         {
@@ -244,6 +247,9 @@ static void DrawToggle(float x, float y, AVL& avl)
         if (avl.mode == 1) avl.animSpeed = 999999.0f; 
         else avl.animSpeed = 0.8f;
     }
+
+    makeGuiLabel(120, 25, "Speed:");
+    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& editMode)
@@ -252,7 +258,7 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
 
     makeGuiLabel(x, y, "Initialize AVL Tree");
     
-    if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
+    if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
     {
         avl.clear(); 
 
@@ -265,7 +271,7 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
         }
     }
 
-    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
+    if (DrawCustomButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
         const char* filters[] = { "*.txt" };
         const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
@@ -282,7 +288,7 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
         }
     }
 
-    if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
+    if (DrawCustomButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
     { 
         std::istringstream iss(inputBuf);
         int value;
@@ -308,7 +314,7 @@ static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& e
         GuiSetState(STATE_DISABLED);
         DrawText("Maximum 31 nodes reached.", (int)x, (int)y + 112, 16, RED);
     }
-    if (GuiButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
+    if (DrawCustomButton((Rectangle){ x, y + 75, 145, 35 }, "Insert"))
     { 
         std::istringstream iss(valBuf);
         int value;
@@ -321,7 +327,7 @@ static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& e
     GuiSetState(curState);
 
     if (avl.sz == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"))
+    if (DrawCustomButton((Rectangle){ x + 155, y + 75, 145, 35 }, "Delete"))
     {
         std::istringstream iss(valBuf);
         int value;
@@ -332,7 +338,7 @@ static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& e
         }
     }
 
-    if (GuiButton((Rectangle){ x, y + 130, 300, 35 }, "Search"))
+    if (DrawCustomButton((Rectangle){ x, y + 130, 300, 35 }, "Search"))
     {
         std::istringstream iss(valBuf);
         int value;
@@ -342,7 +348,7 @@ static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& e
             strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
         }
     }
-    if (GuiButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) avl.clear();
+    if (DrawCustomButton((Rectangle){ x, y + 185, 300, 35 }, "Clear")) avl.clear();
 }
 
 void AVL::startInsertAnimation(int value)
@@ -420,7 +426,7 @@ void AVL::updateAnimation()
 {
     if (isMoving) 
     {
-        moveTimer += GetFrameTime();
+        moveTimer += GetFrameTime() * speedValues[speedActive];
         float t = moveTimer / moveDuration;
 
         if (t >= 1.0f)
@@ -444,7 +450,7 @@ void AVL::updateAnimation()
 
     if (animMode == 0) return;
 
-    animTimer += GetFrameTime();
+    animTimer += GetFrameTime() * speedValues[speedActive];
     float safeSpeed = (animSpeed >= 0.0f) ? animSpeed : 0.8f;
 
     if (animTimer >= safeSpeed) 

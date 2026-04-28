@@ -56,7 +56,7 @@ int main()
             }
             if (currentState != MENU)
             {
-                if (GuiButton((Rectangle){ 20, 20, 80, 30 }, "#72#Back")) currentState = MENU;
+                if (DrawCustomButton((Rectangle){ 20, 20, 80, 30 }, "#72#Back")) currentState = MENU;
             }
 
         EndDrawing();
