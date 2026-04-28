@@ -3,7 +3,7 @@
 #include "raygui.h"
 #include "common.h"
 #include "tinyfiledialogs.h"
-#include <string>
+#include <string.h>
 #include <sstream>
 #include <fstream>
 #include <vector>
@@ -19,6 +19,7 @@ static const std::vector<std::string> listAddTailCode =
     "    temp = temp.next",
     "temp.next = new Node(val)"
 };
+
 static const std::vector<std::string> listSearchCode =
 {
     "temp = head",
@@ -27,6 +28,7 @@ static const std::vector<std::string> listSearchCode =
     "    temp = temp.next",
     "return null"
 };
+
 static const std::vector<std::string> listUpdateCode =
 {
     "temp = head; i = 0",
@@ -34,6 +36,7 @@ static const std::vector<std::string> listUpdateCode =
     "    temp = temp.next; i++",
     "if temp != null: temp.value = newValue"
 };
+
 static const std::vector<std::string> listDeleteCode =
 {
     "if head == null: return",
@@ -43,6 +46,7 @@ static const std::vector<std::string> listDeleteCode =
     "    temp = temp.next; i++",
     "if temp != null: delete temp"
 };
+
 static const std::vector<std::string>* listCurrentCode = &listAddTailCode;
 static std::string listCurrentCodeTitle = "Linked List Add Tail";
 
@@ -186,6 +190,18 @@ void LinkedList::restoreSnapshot(const Snapshot& sn)
 
 void LinkedList::drawLinkedList(float startX, float startY)
 {
+    Color currentAnimColor = ORANGE;
+    Color currentTxtColor = BLACK;
+    if (animMode != 0 && animPtr != nullptr)
+    {
+        if (animMode == 2 && animPtr->value == targetValue) { currentAnimColor = RED; currentTxtColor = WHITE; }
+        if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex)
+        {
+            currentAnimColor = (animMode == 3) ? DARKGREEN : RED;
+            currentTxtColor = WHITE;
+        }
+    }
+
     Node* cur = head;
     float offsetX = 120;
     
@@ -200,9 +216,12 @@ void LinkedList::drawLinkedList(float startX, float startY)
         }
         else
         {
-            DrawRectangleRec(cur->box, WHITE);
+            Color bg = (animMode != 0 && cur == animPtr) ? currentAnimColor : WHITE;
+            Color fg = (animMode != 0 && cur == animPtr) ? currentTxtColor : BLACK;
+            DrawRectangleRec(cur->box, bg);
             DrawRectangleLinesEx(cur->box, 2, BLACK);
-            DrawNumberInBox(cur->box, cur->value, 20, BLACK);
+            DrawNumberInBox(cur->box, cur->value, 20, fg);
+            if (animMode != 0 && cur == animPtr) DrawText("cur", cur->box.x + 35, cur->box.y - 20, 16, currentAnimColor);
         }
 
         if (cur->next)
@@ -236,43 +255,29 @@ void LinkedList::drawLinkedList(float startX, float startY)
             } else progress = 1.0f;
         }
 
-        if (animMode == 1) {
+        if (animMode == 1)
+        {
             if (progress > 0.0f) activeLine = 3; else activeLine = 2;
-        } else if (animMode == 2) {
+        } else if (animMode == 2)
+        {
             if (animPtr->value == targetValue) activeLine = 2;
             else if (progress > 0.0f) activeLine = 3; 
             else activeLine = 1;
-        } else if (animMode == 3) {
+        } else if (animMode == 3)
+        {
             if (currentIndex == targetIndex) activeLine = 3;
             else if (progress > 0.0f) activeLine = 2;
             else activeLine = 1;
-        } else if (animMode == 4) {
-            if (currentIndex == targetIndex) {
+        } else if (animMode == 4)
+        {
+            if (currentIndex == targetIndex)
+            {
                 if (targetIndex == 0) activeLine = 1;
                 else activeLine = 5;
             }
             else if (progress > 0.0f) activeLine = 4;
             else activeLine = 3;
         }
-
-        float currentX = animPtr->box.x;
-        float currentY = animPtr->box.y;
-        float slidingX = currentX + (offsetX * progress);
-        
-        Rectangle windowBox = { slidingX, currentY, 100.0f, 50.0f };
-        
-        Color boxColor = ORANGE;
-        Color txtColor = BLACK;
-        if (animMode == 2 && animPtr->value == targetValue) { boxColor = RED; txtColor = WHITE; }
-        if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex) {
-            boxColor = (animMode == 3) ? DARKGREEN : RED;
-            txtColor = WHITE;
-        }
-
-        DrawRectangleRec(windowBox, boxColor);
-        DrawRectangleLinesEx(windowBox, 2, BLACK);
-        DrawNumberInBox(windowBox, animPtr->value, 20, txtColor);
-        DrawText("cur", windowBox.x + 35, windowBox.y - 20, 16, boxColor);
     }
 
     if (animMode != 0 && animPtr != nullptr)
@@ -334,9 +339,7 @@ void LinkedList::drawLinkedList(float startX, float startY)
                     animPtr->next = newNode;
                     sz++;
                     activeLine = 4;
-                } else if (animMode == 2) {
-                    activeLine = 4;
-                }
+                } else if (animMode == 2) activeLine = 4;
                 animMode = 0;
                 animPtr = nullptr; 
             }
@@ -444,9 +447,7 @@ void LinkedList::manualUpload(const std::string &input)
     clear();
     std::istringstream iss(input);
     int value;
-    while (iss >> value && sz < 9) {
-        addToTail(value);
-    }
+    while (iss >> value && sz < 9) addToTail(value);
 }
 
 static void DrawToggle(float x, float y, LinkedList& list)
@@ -463,22 +464,41 @@ static void DrawToggle(float x, float y, LinkedList& list)
     }
 }
 
-static void DrawForwardButton(float x, float y, LinkedList& list)
+static void DrawAnimationControls(float centerX, float y, LinkedList& list)
 {
-    GuiSetState(STATE_NORMAL);
-    if (list.mode != 1 || list.animMode == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) list.animSpeed = 0.0f; 
-    GuiSetState(STATE_NORMAL);
-}
+    float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
-static void DrawBackwardButton(float x, float y, LinkedList& list)
-{
-    if (list.mode != 1 || list.history.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
+    GuiSetState((list.mode == 1 && !list.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    {
+        LinkedList::Snapshot firstState = list.history.front();
+        list.history.clear();
+        list.restoreSnapshot(firstState);
+        if (list.mode == 1) list.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         LinkedList::Snapshot lastState = list.history.back();
         list.history.pop_back();
         list.restoreSnapshot(lastState);
+        if (list.mode == 1) list.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    GuiSetState((list.mode == 1 && list.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) list.animSpeed = 0.0f; 
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    {
+        while (list.animMode != 0)
+        {
+            list.animSpeed = 0.0f;
+            list.animTimer = 99999.0f;
+            list.drawLinkedList(430, 250);
+        }
         if (list.mode == 1) list.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
@@ -519,6 +539,7 @@ static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool&
         std::istringstream iss(valBuf);
         int value;
         if (iss >> value && list.sz < 9) list.addToHead(value);
+        strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
     }
     
     if (GuiButton((Rectangle){ x + 150, y + 75, 140, 35 }, "Add to Tail"))
@@ -526,6 +547,7 @@ static void DrawAddPanel(float x, float y, LinkedList& list, char* valBuf, bool&
         std::istringstream iss(valBuf);
         int value;
         if (iss >> value && list.animMode == 0 && list.sz < 9) list.startAddTailAnimation(value);
+        strcpy(valBuf, TextFormat("%d", GetRandomValue(1, 99)));
     }
     GuiSetState(curState);
     
@@ -568,11 +590,10 @@ static void DrawSearchPanel(float x, float y, LinkedList& list, char* searchBuf,
     makeGuiLabel(x, y, "Search value");
     makeGuiLabel(x, y + 35, "Value:");
     
-    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, searchBuf, 16, editModeSearch)) {
-        editModeSearch = !editModeSearch;
-    }
+    if (GuiTextBox((Rectangle){ x + 110, y + 35, 70, 25 }, searchBuf, 16, editModeSearch)) editModeSearch = !editModeSearch;
     
-    if (GuiButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Search")) {
+    if (GuiButton((Rectangle){ x + 100, y + 75, 90, 35 }, "Search"))
+    {
         std::istringstream issValue(searchBuf);
         int value;
         if (issValue >> value && list.animMode == 0) list.startSearchAnimation(value);
@@ -598,8 +619,7 @@ void runLinkedList(AppState &currentState)
     myAppList.drawLinkedList(430, 250);
     float X = 60, Y = 250;
 
-    DrawForwardButton(875, 800, myAppList);
-    DrawBackwardButton(725, 800, myAppList);
+    DrawAnimationControls(800, 800, myAppList);
 
     DrawCodePanel(listCodePanel, code_panel, listCurrentCodeTitle, *listCurrentCode, myAppList.activeLine);
 

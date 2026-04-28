@@ -355,21 +355,40 @@ void DIJKSTRA::restoreSnapshot(const Snapshot &sn)
     changeSpeed(*this);
 }
 
-static void DrawForwardButton(float x, float y, DIJKSTRA &dijkstra)
+static void DrawAnimationControls(float centerX, float y, DIJKSTRA &dijkstra)
 {
-    GuiSetState((dijkstra.mode == 1 && dijkstra.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) dijkstra.animSpeed = 0.0f;
-    GuiSetState(STATE_NORMAL);
-}
+    float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
-static void DrawBackwardButton(float x, float y, DIJKSTRA &dijkstra)
-{
     GuiSetState((dijkstra.mode == 1 && !dijkstra.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward"))
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#"))
+    {
+        DIJKSTRA::Snapshot firstState = dijkstra.history.front();
+        dijkstra.history.clear();
+        dijkstra.restoreSnapshot(firstState);
+    }
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#"))
     {
         DIJKSTRA::Snapshot lastState = dijkstra.history.back();
         dijkstra.history.pop_back();
         dijkstra.restoreSnapshot(lastState);
+    }
+
+    startX += btnW + gap;
+    GuiSetState((dijkstra.mode == 1 && dijkstra.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) dijkstra.animSpeed = 0.0f;
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#"))
+    {
+        while (dijkstra.animMode != 0)
+        {
+            dijkstra.animSpeed = 0.0f;
+            dijkstra.animTimer = 99999.0f;
+            dijkstra.updateAnimation();
+        }
+        if (dijkstra.mode == 1) dijkstra.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
 }
@@ -510,8 +529,7 @@ void runDijkstra(AppState &currentState)
     myDijkstra.drawGraph();
 
     float x = 60.0f, y = 150.0f;
-    DrawForwardButton(875, 800, myDijkstra);
-    DrawBackwardButton(725, 800, myDijkstra);
+    DrawAnimationControls(800, 800, myDijkstra);
     DrawCodePanel(dijkstraCodePanel, code_panel, "Dijkstra Pseudocode", dijkstraCodeLines, myDijkstra.activeLine);
 
     bool isBusy = (myDijkstra.animMode != 0);

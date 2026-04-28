@@ -366,23 +366,41 @@ void MST::restoreSnapshot(const Snapshot &sn)
         animSpeed = 0.8f;
 }
 
-static void DrawForwardButton(float x, float y, MST &mst)
+static void DrawAnimationControls(float centerX, float y, MST &mst)
 {
-    GuiSetState(STATE_NORMAL);
-    if (mst.mode != 1 || mst.animMode == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >"))
-        mst.animSpeed = 0.0f;
-    GuiSetState(STATE_NORMAL);
-}
+    float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
-static void DrawBackwardButton(float x, float y, MST &mst)
-{
-    if (mst.mode != 1 || mst.history.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward"))
+    GuiSetState((mst.mode == 1 && !mst.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#"))
+    {
+        MST::Snapshot firstState = mst.history.front();
+        mst.history.clear();
+        mst.restoreSnapshot(firstState);
+        if (mst.mode == 1) mst.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#"))
     {
         MST::Snapshot lastState = mst.history.back();
         mst.history.pop_back();
         mst.restoreSnapshot(lastState);
+        if (mst.mode == 1) mst.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    GuiSetState((mst.mode == 1 && mst.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) mst.animSpeed = 0.0f;
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#"))
+    {
+        while (mst.animMode != 0)
+        {
+            mst.animSpeed = 0.0f;
+            mst.animTimer = 99999.0f;
+            mst.updateAnimation();
+        }
         if (mst.mode == 1) mst.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
@@ -529,8 +547,7 @@ void runMST(AppState &currentState)
     myMST.drawGraph();
 
     float X = 60, Y = 150;
-    DrawForwardButton(875, 800, myMST);
-    DrawBackwardButton(725, 800, myMST);
+    DrawAnimationControls(800, 800, myMST);
     DrawCodePanel(mstCodePanel, code_panel, "Kruskal Pseudocode", mstCodeLines, myMST.activeLine);
 
     bool isBusy = (myMST.animMode != 0);

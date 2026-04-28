@@ -151,26 +151,42 @@ void Heap::clear()
     activeLine = -1;
 }
 
-static void DrawForwardButton(float x, float y, Heap& heap)
+static void DrawAnimationControls(float centerX, float y, Heap& heap)
 {
-    GuiSetState(STATE_NORMAL);
-    if (heap.mode != 1 || heap.animMode == 0) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "Forward >")) 
-    {
-        heap.animSpeed = 0.0f; 
-    }
-    GuiSetState(STATE_NORMAL);
-}
+    float btnW = 60, gap = 10, startX = centerX - (4 * btnW + 3 * gap) / 2.0f;
 
-static void DrawBackwardButton(float x, float y, Heap& heap)
-{
-    if (heap.mode != 1 || heap.history.empty()) GuiSetState(STATE_DISABLED);
-    if (GuiButton((Rectangle){ x, y, 120, 30 }, "< Backward")) 
+    GuiSetState((heap.mode == 1 && !heap.history.empty()) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#129#")) 
+    {
+        Heap::Snapshot firstState = heap.history.front();
+        heap.history.clear();
+        heap.restoreSnapshot(firstState);
+        if (heap.mode == 1) heap.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#130#")) 
     {
         Heap::Snapshot lastState = heap.history.back();
         heap.history.pop_back();
         heap.restoreSnapshot(lastState);
-        
+        if (heap.mode == 1) heap.animSpeed = 999999.0f;
+    }
+
+    startX += btnW + gap;
+    GuiSetState((heap.mode == 1 && heap.animMode != 0) ? STATE_NORMAL : STATE_DISABLED);
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#131#")) heap.animSpeed = 0.0f; 
+
+    startX += btnW + gap;
+    if (GuiButton((Rectangle){ startX, y, btnW, 30 }, "#134#")) 
+    {
+        while (heap.animMode != 0 || heap.isMoving)
+        {
+            heap.animSpeed = 0.0f;
+            heap.moveTimer = 99999.0f;
+            heap.animTimer = 99999.0f;
+            heap.updateAnimation();
+        }
         if (heap.mode == 1) heap.animSpeed = 999999.0f;
     }
     GuiSetState(STATE_NORMAL);
@@ -563,8 +579,7 @@ void runHeap(AppState &currentState)
 
     float X = 60, Y = 150;
     
-    DrawForwardButton(875, 800, myHeap);
-    DrawBackwardButton(725, 800, myHeap);
+    DrawAnimationControls(800, 800, myHeap);
 
     DrawCodePanel(heapCodePanel, code_panel, heapCurrentCodeTitle, *heapCurrentCode, myHeap.activeLine);
 
