@@ -214,7 +214,7 @@ static void DrawToggle(float x, float y, Heap& heap)
 
 static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& editMode)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 0.05f, 8, 1.0f, BLACK);
 
     makeGuiLabel(x, y, "Initialize Heap");
     
@@ -261,7 +261,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
 
 static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 220 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 220 }, 0.05f, 8, 1.0f, BLACK);
 
     makeGuiLabel(x, y, "Operations");
     makeGuiLabel(x, y + 35, "Value:");

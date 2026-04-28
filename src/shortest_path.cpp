@@ -410,7 +410,7 @@ static void DrawToggle(float x, float y, DIJKSTRA &dijkstra)
 static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, bool &editMode)
 {
     static Vector2 inputScroll = { 0.0f, 0.0f };
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 0.05f, 8, 1.0f, BLACK);
     makeGuiLabel(x, y, "Initialize Graph");
     if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random")) dijkstra.randomize();
     if (DrawCustomButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
@@ -436,7 +436,7 @@ static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, 
 
 static void DrawOperationPanel(float x, float y, DIJKSTRA &dijkstra)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 0.05f, 8, 1.0f, BLACK);
     makeGuiLabel(x, y, "Operations");
     int curState = GuiGetState();
     if (dijkstra.nodes.empty() || dijkstra.edges.empty() || dijkstra.sourceNode < 0) GuiSetState(STATE_DISABLED);

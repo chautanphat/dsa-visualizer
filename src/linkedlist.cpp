@@ -512,7 +512,7 @@ static void DrawAnimationControls(float centerX, float y, LinkedList& list)
 
 static void DrawInitPanel(float x, float y, LinkedList& list, char* inputBuf, bool& editMode)
 {
-    DrawRectangleLinesEx((Rectangle){ x, y, 800, 80 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x, y, 800, 80 }, 0.15f, 8, 1.0f, BLACK);
     
     if (DrawCustomButton((Rectangle){ x + 50, y + 30, 120, 30 }, "Random")) list.randomize();
     if (DrawCustomButton((Rectangle){ x + 200, y + 30, 120, 30 }, "Upload")) list.fileUpload();
@@ -634,7 +634,7 @@ void runLinkedList(AppState &currentState)
 
     DrawToggle(X, Y - 100, myAppList);
     DrawInitPanel(600, 20, myAppList, inputBuffer, editMode);
-    DrawRectangleLinesEx((Rectangle){ X - 20, Y, 330, 450 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ X - 20, Y, 330, 450 }, 0.05f, 8, 1.0f, BLACK);
     DrawAddPanel(X, Y + 25, myAppList, valBuffer, editModeValue);
     DrawUpdatePanel(X, Y + 150, myAppList, indexBuffer, editModeIndex, updateValBuffer, updateValEditMode);
     DrawSearchPanel(X, Y + 300, myAppList, valSearchBuffer, valSearchEditMode);

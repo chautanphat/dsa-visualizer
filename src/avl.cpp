@@ -254,7 +254,7 @@ static void DrawToggle(float x, float y, AVL& avl)
 
 static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& editMode)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 230 }, 0.05f, 8, 1.0f, BLACK);
 
     makeGuiLabel(x, y, "Initialize AVL Tree");
     
@@ -301,7 +301,7 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
 
 static void DrawOperationPanel(float x, float y, AVL& avl, char* valBuf, bool& editModeVal)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 280 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 280 }, 0.05f, 8, 1.0f, BLACK);
 
     makeGuiLabel(x, y, "Operations");
     makeGuiLabel(x, y + 35, "Value:");

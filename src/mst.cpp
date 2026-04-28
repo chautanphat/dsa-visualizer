@@ -428,7 +428,7 @@ static void DrawToggle(float x, float y, MST &mst)
 static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &editMode)
 {
     static Vector2 inputScroll = { 0.0f, 0.0f };
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 0.05f, 8, 1.0f, BLACK);
     makeGuiLabel(x, y, "Initialize Graph");
 
     if (DrawCustomButton((Rectangle){ x, y + 35, 145, 35 }, "Random"))
@@ -460,7 +460,7 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
 
 static void DrawOperationPanel(float x, float y, MST &mst)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 1, BLACK);
+    DrawRectangleRoundedLinesEx((Rectangle){ x - 20, y - 25, 340, 180 }, 0.05f, 8, 1.0f, BLACK);
     makeGuiLabel(x, y, "Operations");
 
     int curState = GuiGetState();
