@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <sstream>
 
 static int editorCursorIndex = 0;
 
@@ -259,6 +260,70 @@ bool DrawCustomButton(Rectangle bounds, const char* text)
     if (displayText[0] != '\0') DrawText(displayText, startX, startY, fontSize, textColor);
 
     return clicked;
+}
+
+void DrawCustomToggleGroup(Rectangle bounds, const char *text, int *active)
+{
+    std::vector<std::string> options;
+    std::stringstream ss(text);
+    std::string item;
+    while (std::getline(ss, item, ';')) options.push_back(item);
+
+    for (int i = 0; i < (int)options.size(); i++)
+    {
+        Rectangle toggleBounds = { bounds.x + i * (bounds.width + 5.0f), bounds.y, bounds.width, bounds.height };
+        
+        int state = GuiGetState();
+        bool clicked = false;
+        Vector2 mousePoint = GetMousePosition();
+        
+        if (state != STATE_DISABLED) 
+        {
+            if (CheckCollisionPointRec(mousePoint, toggleBounds)) 
+            {
+                if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) state = STATE_PRESSED;
+                else state = STATE_FOCUSED;
+                if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) clicked = true;
+            } 
+            else state = STATE_NORMAL;
+        }
+
+        if (*active == i && state != STATE_DISABLED && state != STATE_FOCUSED) state = STATE_PRESSED;
+
+        Color baseColor, textColor;
+        switch (state) 
+        {
+            case STATE_NORMAL:
+                baseColor = Fade(LIGHTGRAY, 0.3f);
+                textColor = DARKGRAY;
+                break;
+            case STATE_FOCUSED:
+                baseColor = Fade(LIGHTGRAY, (*active == i) ? 0.9f : 0.8f);
+                textColor = BLACK;
+                break;
+            case STATE_PRESSED:
+                baseColor = LIGHTGRAY;
+                textColor = BLACK;
+                break;
+            case STATE_DISABLED:
+            default:
+                baseColor = Fade(LIGHTGRAY, 0.1f);
+                textColor = Fade(DARKGRAY, 0.4f);
+                break;
+        }
+
+        DrawRectangleRounded(toggleBounds, 0.5f, 16, baseColor);
+
+        int fontSize = GuiGetStyle(DEFAULT, TEXT_SIZE); 
+        if (fontSize == 0) fontSize = 20; 
+        int textWidth = MeasureText(options[i].c_str(), fontSize);
+        int startX = (int)toggleBounds.x + ((int)toggleBounds.width - textWidth) / 2;
+        int startY = (int)toggleBounds.y + ((int)toggleBounds.height - fontSize) / 2;
+        
+        DrawText(options[i].c_str(), startX, startY, fontSize, textColor);
+
+        if (clicked) *active = i;
+    }
 }
 
 void makeGuiLabel(float x, float y, const char* text)

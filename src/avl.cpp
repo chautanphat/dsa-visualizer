@@ -240,7 +240,7 @@ static void DrawToggle(float x, float y, AVL& avl)
     int oldMode = avl.mode;
 
     makeGuiLabel(x + 45, y - 30, "Animation Mode:");
-    GuiToggleGroup((Rectangle){ x, y, 130, 30 }, "Run-at-once;Step-by-step", &avl.mode);
+    DrawCustomToggleGroup((Rectangle){ x - 20, y, 150, 30 }, "Run-at-once;Step-by-step", &avl.mode);
 
     if (avl.mode != oldMode)
     {
@@ -249,7 +249,7 @@ static void DrawToggle(float x, float y, AVL& avl)
     }
 
     makeGuiLabel(120, 25, "Speed:");
-    GuiToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
+    DrawCustomToggleGroup((Rectangle){ 190, 20, 55, 30 }, "0.25x;0.5x;1x;1.5x;2x", &speedActive);
 }
 
 static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& editMode)
