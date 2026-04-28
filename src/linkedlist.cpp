@@ -6,31 +6,36 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include "../vendor/tinyfiledialogs.h"
 
 static LinkedList myAppList;
 static CodePanel listCodePanel;
 
-static const std::vector<std::string> listAddTailCode = {
+static const std::vector<std::string> listAddTailCode =
+{
     "if head == null: head = new Node(val)",
     "temp = head",
     "while temp.next != null:",
     "    temp = temp.next",
     "temp.next = new Node(val)"
 };
-static const std::vector<std::string> listSearchCode = {
+static const std::vector<std::string> listSearchCode =
+{
     "temp = head",
     "while temp != null:",
     "    if temp.value == target: return temp",
     "    temp = temp.next",
     "return null"
 };
-static const std::vector<std::string> listUpdateCode = {
+static const std::vector<std::string> listUpdateCode =
+{
     "temp = head; i = 0",
     "while temp != null and i < index:",
     "    temp = temp.next; i++",
     "if temp != null: temp.value = newValue"
 };
-static const std::vector<std::string> listDeleteCode = {
+static const std::vector<std::string> listDeleteCode =
+{
     "if head == null: return",
     "if index == 0: head = head.next; return",
     "temp = head; i = 0",
@@ -410,7 +415,19 @@ void LinkedList::randomize()
 
 void LinkedList::fileUpload()
 {
-    
+    const char* filters[] = { "*.txt" };
+    const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
+    if (filepath)
+    {
+        std::ifstream file(filepath);
+        if (file.is_open())
+        {
+            int value;
+            clear();
+            while (file >> value && sz < 9) addToTail(value);
+            file.close();
+        }
+    }
 }
 
 void LinkedList::manualUpload(const std::string &input)

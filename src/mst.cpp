@@ -9,6 +9,8 @@
 #include <numeric>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include "../vendor/tinyfiledialogs.h"
 
 static const float graphCenterX = 900.0f;
 static const float graphCenterY = 420.0f;
@@ -314,7 +316,7 @@ void MST::updateAnimation()
             if (edgesAccepted == (int)nodes.size() - 1)
                 statusText = "MST complete.";
             else
-                statusText = "Graph is disconnected. MST cannot connect all nodes.";
+                statusText = "Graph is disconnected.";
         } else animMode = 1;
     }
 }
@@ -410,7 +412,19 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
 
     if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
-        // Upload support can be added later.
+        const char* filters[] = { "*.txt" };
+        const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
+        if (filepath)
+        {
+            std::ifstream file(filepath);
+            if (file.is_open())
+            {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                mst.manualUpload(buffer.str());
+                file.close();
+            }
+        }
     }
 
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))

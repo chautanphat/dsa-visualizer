@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sstream>
 #include <fstream>
+#include "../vendor/tinyfiledialogs.h"
 
 const float startX = 1000.0f;
 const float startY = 100.0f;
@@ -210,7 +211,19 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
 
     if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
-        
+        const char* filters[] = { "*.txt" };
+        const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
+        if (filepath)
+        {
+            std::ifstream file(filepath);
+            if (file.is_open())
+            {
+                int value;
+                heap.clear();
+                while (file >> value && heap.sz < 31) heap.push(value);
+                file.close();
+            }
+        }
     }
 
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
