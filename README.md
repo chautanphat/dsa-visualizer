@@ -2,6 +2,8 @@
 
 An interactive, desktop-based graphical application designed to help students and developers comprehend complex Data Structures and Algorithms (DSA). Built entirely in C++ using the Raylib framework, this tool visualizes the step-by-step execution of fundamental and advanced data structures.
 
+![Menu of the visualizer](img/menu.png)
+
 ## Supported Data Structures & Algorithms
 
 *   **Linked List**: Insertion, Deletion, Search, and Update operations.
@@ -18,6 +20,8 @@ An interactive, desktop-based graphical application designed to help students an
 *   **Adjustable Animation Speed**: Change the speed of the visualizer dynamically on the fly (`0.25x`, `0.5x`, `1.0x`, `1.5x`, `2.0x`).
 *   **Custom Data Input**: Input data manually, randomize the current structure, or upload a `.txt` file via native OS file dialogs.
 *   **Interactive Graph Nodes**: Click and drag vertices in graph algorithms (Dijkstra and Kruskal) seamlessly via a built-in physics spring-layout algorithm.
+
+![Illustration of the Shortest Path (Dijkstra) visualization](img/dijkstra.png)
 
 ## Technologies Used
 
