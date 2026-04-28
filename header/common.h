@@ -15,7 +15,7 @@ enum AppState
     AVLTREE,
     AATREE,
     MINIMUM_SPANNING_TREE,
-    SHORTEST_PATHS
+    SHORTEST_PATH
 };
 struct CodePanel
 {

@@ -8,7 +8,7 @@
 #include "avl.h"
 #include "aa.h"
 #include "mst.h"
-#include "shortest_paths.h"
+#include "shortest_path.h"
 #include <ctime>
 
 const int screenWidth = 1600;
@@ -50,7 +50,7 @@ int main()
                 case MINIMUM_SPANNING_TREE:
                     runMST(currentState);
                     break;
-                case SHORTEST_PATHS:
+                case SHORTEST_PATH:
                     runDijkstra(currentState);
                     break;
             }

@@ -3,12 +3,14 @@
 #include "raymath.h"
 #include "raygui.h"
 #include "common.h"
+#include "tinyfiledialogs.h"
 #include <vector>
 #include <sstream>
 #include <map>
 #include <numeric>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 
 static const float graphCenterX = 900.0f;
 static const float graphCenterY = 420.0f;
@@ -314,7 +316,7 @@ void MST::updateAnimation()
             if (edgesAccepted == (int)nodes.size() - 1)
                 statusText = "MST complete.";
             else
-                statusText = "Graph is disconnected. MST cannot connect all nodes.";
+                statusText = "Graph is disconnected.";
         } else animMode = 1;
     }
 }
@@ -410,7 +412,19 @@ static void DrawInitPanel(float x, float y, MST &mst, char *inputBuf, bool &edit
 
     if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
-        // Upload support can be added later.
+        const char* filters[] = { "*.txt" };
+        const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
+        if (filepath)
+        {
+            std::ifstream file(filepath);
+            if (file.is_open())
+            {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                mst.manualUpload(buffer.str());
+                file.close();
+            }
+        }
     }
 
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
@@ -494,8 +508,13 @@ void MST::drawGraph()
     for (auto &n : nodes)
     {
         Vector2 p = {n.x, n.y};
-        if (n.id == ha || n.id == hb) DrawCircleV(p, 35, ORANGE);
-        DrawNode(p, n.label, 20, 30, 4);
+        Color bgColor = WHITE;
+        if (n.id == ha || n.id == hb) bgColor = ORANGE;
+        
+        DrawCircleV(p, 30, bgColor);
+        DrawRing(p, 26, 30, 0.0f, 360.0f, 40, BLACK);
+        const char *nodeText = TextFormat("%d", n.label);
+        DrawText(nodeText, p.x - MeasureText(nodeText, 20) / 2, p.y - 10, 20, BLACK);
     }
 }
 

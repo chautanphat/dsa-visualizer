@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
+#include "tinyfiledialogs.h"
 #include <vector>
 #include <string.h>
 #include <sstream>
@@ -249,7 +250,19 @@ static void DrawInitPanel(float x, float y, AVL& avl, char* inputBuf, bool& edit
 
     if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
-        
+        const char* filters[] = { "*.txt" };
+        const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
+        if (filepath)
+        {
+            std::ifstream file(filepath);
+            if (file.is_open())
+            {
+                int value;
+                avl.clear();
+                while (file >> value && avl.sz < 31) avl.insert(value);
+                file.close();
+            }
+        }
     }
 
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
@@ -786,14 +799,20 @@ static void draw(AVL::Node* cur, AVL& tree)
     int myIdx = cur->id; 
     Vector2 drawPos = {cur->vX, cur->vY};
 
+    Color bgColor = WHITE;
+    Color txtColor = BLACK;
+
     if (tree.animMode != 0)
     {
-        if (myIdx == tree.curIdx) DrawCircleV(drawPos, 35, ORANGE);
-        if (myIdx == tree.targetIdx) DrawCircleV(drawPos, 35, RED);
+        if (myIdx == tree.curIdx) bgColor = ORANGE;
+        if (myIdx == tree.targetIdx) { bgColor = RED; txtColor = WHITE; }
     }
 
     DrawText(TextFormat("%d", cur->bf), drawPos.x - 5, drawPos.y - 55, 20, RED);
-    DrawNode(drawPos, cur->value, 20, 30, 4);
+    DrawCircleV(drawPos, 30, bgColor);
+    DrawRing(drawPos, 26, 30, 0.0f, 360.0f, 40, BLACK);
+    const char* text = TextFormat("%d", cur->value);
+    DrawText(text, drawPos.x - MeasureText(text, 20)/2, drawPos.y - 10, 20, txtColor);
 }
 
 void AVL::drawTree()

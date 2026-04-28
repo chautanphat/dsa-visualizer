@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
+#include "tinyfiledialogs.h"
 #include <vector>
 #include <string.h>
 #include <sstream>
@@ -210,7 +211,19 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
 
     if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
     {
-        
+        const char* filters[] = { "*.txt" };
+        const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
+        if (filepath)
+        {
+            std::ifstream file(filepath);
+            if (file.is_open())
+            {
+                int value;
+                heap.clear();
+                while (file >> value && heap.sz < 31) heap.push(value);
+                file.close();
+            }
+        }
     }
 
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual"))
@@ -226,7 +239,7 @@ static void DrawInitPanel(float x, float y, Heap& heap, char* inputBuf, bool& ed
 
 static void DrawUpdatePanel(float x, float y, Heap& heap, char* valBuf, bool& editModeVal)
 {
-    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 250 }, 1, BLACK);
+    DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 220 }, 1, BLACK);
 
     makeGuiLabel(x, y, "Operations");
     makeGuiLabel(x, y + 35, "Value:");
@@ -512,14 +525,20 @@ static void draw(Heap::Node* cur, Heap& heap)
 
     if (!isRootHidden) 
     {
+        Color bgColor = WHITE;
+        Color txtColor = BLACK;
+
         if (heap.animMode != 0)
         {
-            if (heap.animMode == 3 && myIdx == 0) DrawCircleV(drawPos, 35, RED);
-            else if (heap.animMode == 5 && myIdx == heap.moveIdxA) DrawCircleV(drawPos, 35, RED);
-            else if (myIdx == heap.curIdx) DrawCircleV(drawPos, 35, ORANGE);
-            else if (myIdx == heap.targetIdx) DrawCircleV(drawPos, 35, RED);
+            if (heap.animMode == 3 && myIdx == 0) { bgColor = RED; txtColor = WHITE; }
+            else if (heap.animMode == 5 && myIdx == heap.moveIdxA) { bgColor = RED; txtColor = WHITE; }
+            else if (myIdx == heap.curIdx) bgColor = ORANGE;
+            else if (myIdx == heap.targetIdx) { bgColor = RED; txtColor = WHITE; }
         }
-        DrawNode(drawPos, cur->value, 20, 30, 4);
+        DrawCircleV(drawPos, 30, bgColor);
+        DrawRing(drawPos, 26, 30, 0.0f, 360.0f, 40, BLACK);
+        const char* text = TextFormat("%d", cur->value);
+        DrawText(text, drawPos.x - MeasureText(text, 20)/2, drawPos.y - 10, 20, txtColor);
     }
 }
 

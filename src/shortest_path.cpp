@@ -1,13 +1,15 @@
-#include "shortest_paths.h"
+#include "shortest_path.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "raygui.h"
 #include "common.h"
+#include "tinyfiledialogs.h"
 #include <vector>
 #include <sstream>
 #include <tuple>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 
 const float graphCenterX = 900.0f;
 const float graphCenterY = 420.0f;
@@ -386,7 +388,22 @@ static void DrawInitPanel(float x, float y, DIJKSTRA &dijkstra, char *inputBuf, 
     DrawRectangleLinesEx((Rectangle){ x - 20, y - 25, 340, 330 }, 1, BLACK);
     makeGuiLabel(x, y, "Initialize Graph");
     if (GuiButton((Rectangle){ x, y + 35, 145, 35 }, "Random")) dijkstra.randomize();
-    GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload");
+    if (GuiButton((Rectangle){ x + 155, y + 35, 145, 35 }, "Upload"))
+    {
+        const char* filters[] = { "*.txt" };
+        const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
+        if (filepath)
+        {
+            std::ifstream file(filepath);
+            if (file.is_open())
+            {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                dijkstra.manualUpload(buffer.str());
+                file.close();
+            }
+        }
+    }
     if (GuiButton((Rectangle){ x, y + 90, 300, 35 }, "Manual")) dijkstra.manualUpload(inputBuf);
     makeGuiLabel(x, y + 145, "Edges (u, v w):");
     DrawMultiLineEditor((Rectangle){ x, y + 175, 300, 110 }, inputBuf, 2048, editMode, inputScroll);

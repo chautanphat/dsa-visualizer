@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
+#include "tinyfiledialogs.h"
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -10,27 +11,31 @@
 static LinkedList myAppList;
 static CodePanel listCodePanel;
 
-static const std::vector<std::string> listAddTailCode = {
+static const std::vector<std::string> listAddTailCode =
+{
     "if head == null: head = new Node(val)",
     "temp = head",
     "while temp.next != null:",
     "    temp = temp.next",
     "temp.next = new Node(val)"
 };
-static const std::vector<std::string> listSearchCode = {
+static const std::vector<std::string> listSearchCode =
+{
     "temp = head",
     "while temp != null:",
     "    if temp.value == target: return temp",
     "    temp = temp.next",
     "return null"
 };
-static const std::vector<std::string> listUpdateCode = {
+static const std::vector<std::string> listUpdateCode =
+{
     "temp = head; i = 0",
     "while temp != null and i < index:",
     "    temp = temp.next; i++",
     "if temp != null: temp.value = newValue"
 };
-static const std::vector<std::string> listDeleteCode = {
+static const std::vector<std::string> listDeleteCode =
+{
     "if head == null: return",
     "if index == 0: head = head.next; return",
     "temp = head; i = 0",
@@ -187,14 +192,18 @@ void LinkedList::drawLinkedList(float startX, float startY)
     while (cur)
     {
         cur->box = {startX, startY, 100.0f, 50.0f};
-        DrawRectangleRec(cur->box, WHITE);
-
         if (cur == searchResult)
-            DrawRectangleLinesEx(cur->box, 5, RED);
-        else
+        {
+            DrawRectangleRec(cur->box, RED);
             DrawRectangleLinesEx(cur->box, 2, BLACK);
-
-        DrawNumberInBox(cur->box, cur->value, 20, BLACK);
+            DrawNumberInBox(cur->box, cur->value, 20, WHITE);
+        }
+        else
+        {
+            DrawRectangleRec(cur->box, WHITE);
+            DrawRectangleLinesEx(cur->box, 2, BLACK);
+            DrawNumberInBox(cur->box, cur->value, 20, BLACK);
+        }
 
         if (cur->next)
         {
@@ -250,15 +259,20 @@ void LinkedList::drawLinkedList(float startX, float startY)
         float currentY = animPtr->box.y;
         float slidingX = currentX + (offsetX * progress);
         
-        Rectangle windowBox = { slidingX - 5, currentY - 5, 110.0f, 60.0f };
+        Rectangle windowBox = { slidingX, currentY, 100.0f, 50.0f };
         
         Color boxColor = ORANGE;
-        if (animMode == 2 && animPtr->value == targetValue) boxColor = RED;
-        if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex)
-            boxColor = (animMode == 3) ? GREEN : RED;
+        Color txtColor = BLACK;
+        if (animMode == 2 && animPtr->value == targetValue) { boxColor = RED; txtColor = WHITE; }
+        if ((animMode == 3 || animMode == 4) && currentIndex == targetIndex) {
+            boxColor = (animMode == 3) ? DARKGREEN : RED;
+            txtColor = WHITE;
+        }
 
-        DrawRectangleLinesEx(windowBox, 4, boxColor);
-        DrawText("cur", windowBox.x + 45, windowBox.y - 20, 16, boxColor);
+        DrawRectangleRec(windowBox, boxColor);
+        DrawRectangleLinesEx(windowBox, 2, BLACK);
+        DrawNumberInBox(windowBox, animPtr->value, 20, txtColor);
+        DrawText("cur", windowBox.x + 35, windowBox.y - 20, 16, boxColor);
     }
 
     if (animMode != 0 && animPtr != nullptr)
@@ -410,7 +424,19 @@ void LinkedList::randomize()
 
 void LinkedList::fileUpload()
 {
-    
+    const char* filters[] = { "*.txt" };
+    const char* filepath = tinyfd_openFileDialog("Select File", "", 1, filters, "Text Files", 0);
+    if (filepath)
+    {
+        std::ifstream file(filepath);
+        if (file.is_open())
+        {
+            int value;
+            clear();
+            while (file >> value && sz < 9) addToTail(value);
+            file.close();
+        }
+    }
 }
 
 void LinkedList::manualUpload(const std::string &input)
