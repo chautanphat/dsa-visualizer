@@ -2,11 +2,11 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
+#include "tinyfiledialogs.h"
 #include <string>
 #include <sstream>
 #include <fstream>
 #include <vector>
-#include "../vendor/tinyfiledialogs.h"
 
 static LinkedList myAppList;
 static CodePanel listCodePanel;

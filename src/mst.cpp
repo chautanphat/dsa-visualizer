@@ -3,6 +3,7 @@
 #include "raymath.h"
 #include "raygui.h"
 #include "common.h"
+#include "tinyfiledialogs.h"
 #include <vector>
 #include <sstream>
 #include <map>
@@ -10,7 +11,6 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
-#include "../vendor/tinyfiledialogs.h"
 
 static const float graphCenterX = 900.0f;
 static const float graphCenterY = 420.0f;

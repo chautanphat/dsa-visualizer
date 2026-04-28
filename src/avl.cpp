@@ -2,12 +2,12 @@
 #include "raylib.h"
 #include "raygui.h"
 #include "common.h"
+#include "tinyfiledialogs.h"
 #include <vector>
 #include <string.h>
 #include <sstream>
 #include <fstream>
 #include <iostream>
-#include "../vendor/tinyfiledialogs.h"
 
 const float x_root = 1000.0f;
 const float y_root = 100.0f;
